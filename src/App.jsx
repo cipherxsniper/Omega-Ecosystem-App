@@ -23,6 +23,7 @@ import BrainPage from '@/pages/BrainPage';
 import B2BPage from '@/pages/B2BPage';
 import CodeExportPage from '@/pages/CodeExportPage';
 import GitHubPage from '@/pages/GitHubPage';
+import OmegaDeep from '@/pages/OmegaDeep';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
           <Route path="/b2b" element={<B2BPage />} />
           <Route path="/code-export" element={<CodeExportPage />} />
           <Route path="/github" element={<GitHubPage />} />
+          <Route path="/omega-deep" element={<OmegaDeep />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
