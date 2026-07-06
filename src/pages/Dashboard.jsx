@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Wallet, Image, Compass, BarChart3, Gamepad2, Shield, Brain, FileCode, Briefcase, Eye, Github } from 'lucide-react';
+import { Wallet, Image, Compass, BarChart3, Gamepad2, Shield, Brain, FileCode, Briefcase, Eye, Github, Sparkles } from 'lucide-react';
 import TileCard from '@/components/omega/TileCard';
 import OracleEye from '@/components/omega/OracleEye';
 
@@ -15,6 +15,7 @@ const TILES = [
   { title: 'B2B Portal', desc: 'Enterprise access workflows', icon: <Briefcase size={18} />, to: '/b2b', color: '#84cc16' },
   { title: 'Code Export', desc: 'Full source access', icon: <FileCode size={18} />, to: '/code-export', color: '#a78bfa' },
   { title: 'GitHub Sync', desc: 'Two-way repo sync & file browser', icon: <Github size={18} />, to: '/github', color: '#6e7681' },
+  { title: 'Omega Deep', desc: 'Super-intelligence AI chat', icon: <Sparkles size={18} />, to: '/omega-deep', color: '#a855f7' },
 ];
 
 export default function Dashboard() {
