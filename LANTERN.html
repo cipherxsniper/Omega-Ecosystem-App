@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>LANTERN</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+body{background:#000;overflow:hidden;width:100vw;height:100vh;font-family:'Courier New',monospace;touch-action:none;}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;}
+#hearts{position:absolute;top:10px;left:10px;display:flex;gap:3px;flex-wrap:wrap;max-width:200px;}
+#expBar{position:absolute;top:42px;left:10px;width:100px;height:6px;background:#1a1a2e;border:1px solid #4a4;}
+#expFill{height:100%;background:linear-gradient(90deg,#33aa33,#88ff44);width:0%;transition:width .3s;}
+#rankLabel{position:absolute;top:52px;left:10px;color:#88dd88;font-size:9px;letter-spacing:1px;}
+#omgLabel{position:absolute;top:64px;left:10px;color:#ffcc44;font-size:9px;letter-spacing:1px;}
+#worldLabel{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:#9977bb;font-size:10px;letter-spacing:3px;pointer-events:none;text-shadow:0 0 8px #6633aa;}
+#minimap{position:absolute;top:10px;right:10px;width:76px;height:76px;background:rgba(0,0,0,.75);border:1px solid #332244;border-radius:2px;}
+#inventory{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;pointer-events:all;}
+.invSlot{width:48px;height:48px;background:rgba(8,4,20,.9);border:2px solid #332244;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;border-radius:4px;position:relative;transition:border-color .15s;}
+.invSlot.nft-slot{border-color:#ffcc44;box-shadow:0 0 8px #ffcc4466;}
+.invSlot .icount{position:absolute;bottom:1px;right:3px;font-size:9px;color:#bbb;}
+.invSlot .nft-tag{position:absolute;top:1px;left:2px;font-size:7px;color:#ffcc44;}
+/* JOYSTICK */
+#jZone{position:absolute;bottom:76px;left:12px;width:140px;height:140px;pointer-events:all;}
+#jBase{position:absolute;width:116px;height:116px;border-radius:50%;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);left:12px;top:12px;}
+#jKnob{position:absolute;width:52px;height:52px;border-radius:50%;background:rgba(180,120,255,.3);border:2px solid rgba(160,80,255,.6);left:44px;top:44px;box-shadow:0 0 14px rgba(140,60,255,.4);}
+/* BUTTONS */
+#atkBtn{position:absolute;bottom:106px;right:18px;width:74px;height:74px;border-radius:50%;background:rgba(255,70,70,.18);border:2px solid rgba(255,90,70,.55);pointer-events:all;display:flex;align-items:center;justify-content:center;color:#ff9977;font-size:24px;box-shadow:0 0 16px rgba(255,50,30,.3);}
+#atkBtn:active{background:rgba(255,70,70,.42);}
+#interactBtn{position:absolute;bottom:26px;right:18px;width:50px;height:50px;border-radius:50%;background:rgba(80,180,255,.18);border:2px solid rgba(60,160,255,.5);pointer-events:all;display:flex;align-items:center;justify-content:center;color:#88ccff;font-size:18px;box-shadow:0 0 10px rgba(40,140,255,.3);}
+#interactBtn:active{background:rgba(80,180,255,.38);}
+/* OVERLAYS */
+#msgBox{position:absolute;bottom:72px;left:50%;transform:translateX(-50%);background:rgba(4,2,14,.94);border:1px solid #443366;color:#c8b0ff;padding:7px 14px;font-size:11px;max-width:270px;text-align:center;border-radius:3px;opacity:0;transition:opacity .4s;pointer-events:none;white-space:pre-line;}
+#talkBox{position:absolute;bottom:72px;left:50%;transform:translateX(-50%);background:rgba(2,4,18,.97);border:2px solid #2244aa;color:#aaccff;padding:12px 16px;font-size:11px;max-width:300px;text-align:center;border-radius:5px;display:none;pointer-events:all;z-index:20;}
+#talkBox .npcName{color:#ffdd44;font-size:10px;margin-bottom:5px;letter-spacing:2px;}
+#talkText{line-height:1.6;min-height:36px;}
+#talkChoices{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+.tChoice{background:#0a1a3a;border:1px solid #2244aa;color:#aaccff;padding:5px 10px;font-size:10px;cursor:pointer;border-radius:2px;pointer-events:all;}
+#talkClose{margin-top:8px;background:#1a3a6a;border:1px solid #3366aa;color:#aaccff;padding:5px 18px;cursor:pointer;font-size:11px;border-radius:2px;pointer-events:all;display:block;margin-left:auto;margin-right:auto;}
+#hackBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,10,1,.97);border:2px solid #00ff44;color:#00ff44;padding:14px;font-size:12px;width:290px;border-radius:5px;display:none;pointer-events:all;z-index:20;}
+#hackBox h3{color:#44ff88;margin-bottom:7px;font-size:12px;text-align:center;letter-spacing:2px;}
+#hackSeq{display:flex;gap:5px;margin:8px 0;flex-wrap:wrap;justify-content:center;}
+.hackBtn{background:#001800;border:1px solid #00ff44;color:#00ff44;padding:7px 10px;cursor:pointer;font-size:13px;border-radius:2px;min-width:40px;}
+.hackBtn:active{background:#004400;}
+#hackStatus{margin-top:6px;min-height:18px;color:#88ffaa;font-size:11px;text-align:center;}
+#hackClose{margin-top:8px;background:#001800;border:1px solid #006622;color:#44aa66;padding:5px 14px;cursor:pointer;font-size:11px;border-radius:2px;display:block;margin:8px auto 0;}
+#nftBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,6,0,.98);border:2px solid #ffcc44;color:#ffdd88;padding:16px;font-size:11px;width:300px;border-radius:5px;display:none;pointer-events:all;z-index:20;text-align:center;}
+#nftBox h3{color:#ffcc44;font-size:13px;letter-spacing:2px;margin-bottom:10px;}
+#nftCanvas{border:1px solid #ffcc4466;border-radius:3px;margin:8px auto;display:block;}
+#nftClose{margin-top:10px;background:#1a1000;border:1px solid #996600;color:#ffcc44;padding:5px 14px;cursor:pointer;font-size:11px;border-radius:2px;pointer-events:all;}
+#bossBar{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:200px;display:none;}
+#bossBar .bl{color:#ff4422;font-size:9px;text-align:center;margin-bottom:2px;letter-spacing:2px;}
+#bossBar .bb{height:7px;background:#1a0000;border:1px solid #aa2200;}
+#bossBar .bf{height:100%;background:linear-gradient(90deg,#cc2200,#ff5500);transition:width .3s;}
+#saveBtn{position:absolute;top:90px;right:10px;background:rgba(18,8,36,.82);border:1px solid #443366;color:#9977cc;padding:4px 9px;font-size:9px;cursor:pointer;pointer-events:all;border-radius:2px;}
+/* TITLE */
+#titleScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+#titleCanvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+#titleContent{position:relative;z-index:2;text-align:center;}
+#titleScreen h1{font-size:52px;color:#ffdd44;text-shadow:0 0 30px #ff8800,0 0 70px #ff4400;letter-spacing:12px;animation:flicker 3s infinite;}
+.tsub{color:#665544;font-size:11px;margin-top:10px;letter-spacing:4px;}
+.thint{color:#332211;font-size:10px;margin-top:20px;line-height:2;text-align:center;}
+#startBtn{margin-top:28px;background:transparent;border:2px solid #ffdd44;color:#ffdd44;padding:12px 36px;font-size:15px;cursor:pointer;letter-spacing:4px;font-family:'Courier New',monospace;animation:pulse 2s infinite;pointer-events:all;}
+/* DEATH */
+#deathScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0);z-index:90;display:none;flex-direction:column;align-items:center;justify-content:center;transition:background 1.5s;}
+#deathScreen.show{background:rgba(0,0,0,.93);}
+#deathScreen h2{color:#cc2200;font-size:34px;letter-spacing:6px;text-shadow:0 0 22px #ff0000;}
+#respawnBtn{margin-top:20px;background:transparent;border:1px solid #aa2200;color:#aa4422;padding:10px 28px;cursor:pointer;font-size:13px;font-family:'Courier New',monospace;pointer-events:all;}
+/* WORLD TRANSITION */
+#wTransition{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:50;opacity:0;pointer-events:none;transition:opacity .6s;display:flex;align-items:center;justify-content:center;}
+#wTransition .wName{color:#fff;font-size:18px;letter-spacing:6px;opacity:0;transition:opacity .4s .3s;}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.83}72%{opacity:.96}}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px #ffdd44}50%{box-shadow:0 0 24px #ffaa00}}
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="ui">
+  <div id="hearts"></div>
+  <div id="expBar"><div id="expFill"></div></div>
+  <div id="rankLabel">WANDERER · LV 1</div>
+  <div id="omgLabel">⬡ OMG: 0</div>
+  <div id="worldLabel">THE VEIL</div>
+  <div id="minimap"><canvas id="mmCanvas" width="76" height="76"></canvas></div>
+  <div id="jZone"><div id="jBase"></div><div id="jKnob"></div></div>
+  <div id="atkBtn">⚔</div>
+  <div id="interactBtn">●</div>
+  <div id="inventory"></div>
+  <div id="msgBox"></div>
+  <div id="talkBox">
+    <div class="npcName" id="npcName"></div>
+    <div id="talkText"></div>
+    <div id="talkChoices"></div>
+    <button id="talkClose" onclick="closeTalk()">[ CLOSE ]</button>
+  </div>
+  <div id="hackBox">
+    <h3>⚡ TERMINAL ACCESS</h3>
+    <div id="hackPrompt"></div>
+    <div id="hackSeq"></div>
+    <div id="hackStatus"></div>
+    <button id="hackClose" onclick="closeHack()">[ ABORT ]</button>
+  </div>
+  <div id="nftBox">
+    <h3>NFT ARTIFACT</h3>
+    <canvas id="nftCanvas" width="200" height="200"></canvas>
+    <div id="nftInfo"></div>
+    <button id="nftClose" onclick="closeNFT()">[ COLLECT ]</button>
+  </div>
+  <div id="bossBar"><div class="bl" id="bossName">BOSS</div><div class="bb"><div class="bf" id="bossFill" style="width:100%"></div></div></div>
+  <button id="saveBtn" onclick="saveGame()">[ SAVE ]</button>
+</div>
+<div id="titleScreen">
+  <canvas id="titleCanvas"></canvas>
+  <div id="titleContent">
+    <h1>LANTERN</h1>
+    <div class="tsub">the light reveals what darkness hides</div>
+    <div class="thint">🕹 LEFT THUMB — move &nbsp;|&nbsp; ⚔ RIGHT — attack<br>● INTERACT — talk / hack / open<br>Double-tap inventory slot to DROP item</div>
+    <button id="startBtn" onclick="startGame()">ENTER THE VOID</button>
+  </div>
+</div>
+<div id="deathScreen">
+  <h2>YOU HAVE FALLEN</h2>
+  <p style="color:#662200;font-size:11px;margin-top:10px;">the lantern dims... but does not die</p>
+  <button id="respawnBtn" onclick="respawn()">[ RISE AGAIN ]</button>
+</div>
+<div id="wTransition"><div class="wName" id="wTransName"></div></div>
+
+<script>
+'use strict';
+// ╔══════════════════════════════════════════════════════════╗
+// ║  LANTERN — FULL ENGINE v3                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+// ─── AUDIO ──────────────────────────────────────────────────
+const AC=new(window.AudioContext||window.webkitAudioContext)();
+function uAC(){if(AC.state==='suspended')AC.resume();}
+document.addEventListener('touchstart',uAC,{once:true});
+
+function tone(freq,type,dur,vol=0.2,delay=0,vibrato=0){
+  try{
+    const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+delay;
+    if(vibrato){const lfo=AC.createOscillator(),lfoG=AC.createGain();lfo.frequency.value=5;lfoG.gain.value=vibrato;lfo.connect(lfoG);lfoG.connect(o.frequency);lfo.start(t);lfo.stop(t+dur);}
+    o.type=type;o.frequency.value=freq;
+    o.connect(g);g.connect(AC.destination);
+    g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    o.start(t);o.stop(t+dur);
+  }catch(e){}
+}
+const sfx={
+  hit:()=>{tone(200,'sawtooth',.07,.32);tone(100,'square',.1,.22,.05);},
+  getHit:()=>{tone(130,'sawtooth',.14,.38);tone(65,'sine',.18,.28,.08);},
+  die:()=>[220,185,155,115,75].forEach((f,i)=>tone(f,'sine',.24,.26,i*.12)),
+  pickup:()=>{tone(440,'sine',.09,.22);tone(660,'sine',.09,.18,.1);},
+  portal:()=>{for(let i=0;i<9;i++)tone(180+i*65,'sine',.3,.16,i*.05);},
+  ghost:()=>{tone(880,'sine',.38,.18);tone(580,'sine',.32,.13,.13);tone(290,'sine',.28,.14,.28);},
+  levelUp:()=>[261,329,392,523,659,784].forEach((f,i)=>tone(f,'triangle',.24,.26,i*.1)),
+  door:()=>{tone(155,'square',.3,.34);tone(205,'square',.24,.28,.16);},
+  hack:()=>tone(880,'square',.04,.26),
+  coin:()=>{tone(660,'triangle',.08,.3);tone(990,'triangle',.06,.2,.06);},
+  secret:()=>[196,247,311,392,494].forEach((f,i)=>tone(f,'sine',.5,.18,i*.08,4)),
+  nft:()=>{for(let i=0;i<12;i++)tone(220+i*90,'triangle',.4,.15,i*.04,2);}
+};
+
+// ─── MUSIC ENGINE ─────────────────────────────────────────
+// Each world has its own Zelda-inspired hypnotic scale + tempo
+const MUSIC_DATA={
+  veil:    {scale:[130.8,155.6,174.6,196,220,261.6,311.1,349.2],tempo:700,mood:'haunt'},
+  ember:   {scale:[138.6,164.8,185,220,246.9,293.7,329.6,392], tempo:580,mood:'tense'},
+  crystal: {scale:[146.8,174.6,195.9,220,261.6,293.7,329.6,369.9],tempo:780,mood:'serene'},
+  rot:     {scale:[123.5,138.6,155.6,174.6,196,220,246.9,261.6],tempo:640,mood:'dread'},
+  void:    {scale:[110,130.8,146.8,164.8,185,220,246.9,277.2],tempo:820,mood:'deep'},
+  mirror:  {scale:[155.6,185,220,261.6,311.1,370,440,523.3],tempo:660,mood:'strange'},
+  dream:   {scale:[174.6,220,261.6,311.1,349.2,440,523.3,587.3],tempo:900,mood:'float'},
+  abyss:   {scale:[103.8,116.5,130.8,155.6,174.6,185,196,220], tempo:500,mood:'dark'},
+};
+let musicBeat=0,musicWorld='',musicRunning=false;
+function startMusic(worldId){
+  musicWorld=worldId; musicRunning=true;
+  const {scale,tempo,mood}=MUSIC_DATA[worldId]||MUSIC_DATA.veil;
+  const bass=scale.map(f=>f/2);
+  // Melody patterns per mood
+  const patterns={
+    haunt:[0,2,4,3,5,2,1,4],
+    tense:[0,0,4,3,0,5,6,4],
+    serene:[0,2,4,6,5,4,2,0],
+    dread:[0,1,0,3,2,0,4,1],
+    deep:[0,4,2,6,0,3,5,1],
+    strange:[0,3,5,2,6,1,4,0],
+    float:[0,2,4,5,7,5,4,2],
+    dark:[0,1,2,0,3,1,0,2],
+  };
+  const pat=patterns[mood]||patterns.haunt;
+  function tick(){
+    if(!musicRunning||gameState!=='playing'){setTimeout(tick,800);return;}
+    if(musicWorld!==worldId){return;} // world changed, stop this thread
+    const note=pat[musicBeat%pat.length];
+    const m=scale[note%scale.length],b=bass[note%bass.length];
+    // Melody — triangle with vibrato for hypnotic feel
+    tone(m,'triangle',.58,.05,0,musicBeat%4===0?3:1);
+    // Bass — gentle sine
+    if(musicBeat%2===0)tone(b,'sine',.95,.06);
+    // Harmony — fifth above
+    if(musicBeat%4===0)tone(m*1.498,'triangle',.45,.03,0,1);
+    // Octave shimmer
+    if(musicBeat%8===0)tone(m*2,'sine',.35,.025,0,2);
+    // Sub bass drone on downbeat
+    if(musicBeat%16===0)tone(b/2,'sine',2.0,.04);
+    // Occasional bell accent
+    if(musicBeat%12===0)tone(scale[(note+4)%scale.length]*2,'sine',.3,.035,0,3);
+    musicBeat++;
+    setTimeout(tick,tempo+(musicBeat%3)*55);
+  }
+  tick();
+}
+function changeMusic(worldId){
+  musicRunning=false;
+  setTimeout(()=>{musicBeat=0;startMusic(worldId);},200);
+}
+
+// ─── CANVAS ───────────────────────────────────────────────
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+
+// ─── WORLDS ─────────────────────────────────────────────
+// 8 full worlds with surrealist/impossible themes
+const WORLDS={
+  veil:    {id:'veil',   name:'THE VEIL',         bg:'#06030f',floor:'#130a24',wall:'#1e1238',accent:'#7733cc',fog:'#06030f',
+             desc:'Where thought becomes form',floorDecor:'rune',wallArt:'eye'},
+  ember:   {id:'ember',  name:'EMBER REALM',      bg:'#0c0200',floor:'#221000',wall:'#381800',accent:'#ff5500',fog:'#0c0200',
+             desc:'The world that burns inward',floorDecor:'ash',wallArt:'flame'},
+  crystal: {id:'crystal',name:'CRYSTAL DEEP',     bg:'#000e12',floor:'#001e28',wall:'#003040',accent:'#00ccff',fog:'#000e12',
+             desc:'Refraction of impossible light',floorDecor:'grid',wallArt:'prism'},
+  rot:     {id:'rot',    name:'THE ROT',           bg:'#030900',floor:'#0a1600',wall:'#142400',accent:'#66ff00',fog:'#030900',
+             desc:'Decay that creates',floorDecor:'spore',wallArt:'vine'},
+  void:    {id:'void',   name:'THE VOID',          bg:'#030305',floor:'#06060c',wall:'#0c0c18',accent:'#cc55ff',fog:'#030305',
+             desc:'Between the spaces of thought',floorDecor:'star',wallArt:'sigil'},
+  mirror:  {id:'mirror', name:'THE MIRROR WORLD', bg:'#080010',floor:'#100020',wall:'#1a0038',accent:'#ff44cc',fog:'#080010',
+             desc:'Your reflection has its own lantern',floorDecor:'reflect',wallArt:'face'},
+  dream:   {id:'dream',  name:'THE DREAMFIELD',   bg:'#001408',floor:'#002010',wall:'#003818',accent:'#44ffaa',fog:'#001408',
+             desc:'Sleep walks forward here',floorDecor:'petal',wallArt:'cloud'},
+  abyss:   {id:'abyss',  name:'THE ABYSS',         bg:'#000000',floor:'#050508',wall:'#0a0a10',accent:'#3333ff',fog:'#000000',
+             desc:'The lantern casts no shadow here',floorDecor:'void',wallArt:'rune'},
+};
+const WORLD_ORDER=['veil','ember','crystal','rot','void','mirror','dream','abyss'];
+
+// ─── NFT LEDGER (Omega-backed, in-game economy) ───────────
+const NFT_LEDGER={
+  totalMinted:0,
+  walletAddress:'omega_'+Math.random().toString(36).substr(2,12),
+  omgBalance:0,
+  nfts:[],
+  transactions:[],
+};
+const NFT_RARITIES=['Common','Rare','Epic','Legendary','Impossible Diamond'];
+const NFT_COLLECTIONS=['Surrealism Punks','Echo of Eternity','Void Artifacts','Dream Fragments','Mirror Shards'];
+
+function mintNFT(worldId,reason){
+  const rng=Math.random();
+  const rarity=rng<.01?'Impossible Diamond':rng<.05?'Legendary':rng<.15?'Epic':rng<.35?'Rare':'Common';
+  const omgReward={Common:5,Rare:15,Epic:40,Legendary:100,'Impossible Diamond':500}[rarity];
+  const nft={
+    id:'OMG-'+String(NFT_LEDGER.totalMinted+1).padStart(4,'0'),
+    name:NFT_COLLECTIONS[Math.floor(Math.random()*NFT_COLLECTIONS.length)]+' #'+(NFT_LEDGER.totalMinted+1),
+    rarity,world:worldId,reason,
+    omgValue:omgReward,
+    seed:Math.floor(Math.random()*999999),
+    mintedAt:Date.now(),
+    txHash:'0x'+Array.from({length:16},()=>Math.floor(Math.random()*16).toString(16)).join(''),
+  };
+  NFT_LEDGER.totalMinted++;
+  NFT_LEDGER.nfts.push(nft);
+  NFT_LEDGER.omgBalance+=omgReward;
+  NFT_LEDGER.transactions.push({type:'MINT',nftId:nft.id,omg:omgReward,ts:Date.now()});
+  player.omg=(player.omg||0)+omgReward;
+  player.inventory.push({type:'nft',count:1,nft});
+  renderInventory();
+  document.getElementById('omgLabel').textContent='⬡ OMG: '+player.omg;
+  sfx.nft();
+  showNFTModal(nft);
+  return nft;
+}
+
+function showNFTModal(nft){
+  const el=document.getElementById('nftBox');
+  el.style.display='block';
+  document.getElementById('nftInfo').innerHTML=
+    `<div style="color:#ffcc44;font-size:12px;margin-top:6px;">${nft.name}</div>`+
+    `<div style="color:${rarityColor(nft.rarity)};font-size:11px;">${nft.rarity}</div>`+
+    `<div style="color:#888;font-size:9px;margin-top:4px;">TX: ${nft.txHash.substr(0,18)}...</div>`+
+    `<div style="color:#ffcc44;font-size:11px;margin-top:4px;">+${nft.omgValue} OMG earned</div>`;
+  drawNFTArt(nft);
+}
+function closeNFT(){document.getElementById('nftBox').style.display='none';}
+function rarityColor(r){return{Common:'#aaaaaa',Rare:'#4488ff',Epic:'#aa44ff',Legendary:'#ffcc00','Impossible Diamond':'#00ffff'}[r]||'#fff';}
+
+function drawNFTArt(nft){
+  const c=document.getElementById('nftCanvas');
+  const x=c.getContext('2d');
+  const seed=nft.seed;
+  const rng=(n)=>{let s=seed^(n*2654435761);s=(s^(s>>>16))*0x45d9f3b;s=(s^(s>>>16))*0x45d9f3b;return((s^(s>>>16))>>>0)/4294967295;};
+  // Background
+  const bg=x.createRadialGradient(100,100,0,100,100,100);
+  const worldDef=WORLDS[nft.world]||WORLDS.veil;
+  bg.addColorStop(0,worldDef.floor);bg.addColorStop(1,worldDef.bg);
+  x.fillStyle=bg;x.fillRect(0,0,200,200);
+  // Surrealist pixel art — generate from seed
+  x.imageSmoothingEnabled=false;
+  for(let i=0;i<80;i++){
+    const px=Math.floor(rng(i*3)*200),py=Math.floor(rng(i*3+1)*200);
+    const sz=2+Math.floor(rng(i*3+2)*8);
+    const hue=Math.floor(rng(i*7)*360);
+    x.fillStyle=`hsl(${hue},${60+rng(i*11)*40}%,${30+rng(i*13)*50}%)`;
+    if(rng(i*17)<.3){x.beginPath();x.arc(px,py,sz/2,0,Math.PI*2);x.fill();}
+    else x.fillRect(px,py,sz,sz);
+  }
+  // Lantern centerpiece
+  x.save();x.shadowColor=worldDef.accent;x.shadowBlur=20;
+  x.fillStyle='#ffcc22';x.fillRect(88,78,24,30);
+  x.fillStyle='#ffee88';x.fillRect(91,81,18,22);
+  x.fillStyle='#ffcc22';x.fillRect(90,72,20,10);
+  x.restore();
+  // Rarity border
+  x.strokeStyle=rarityColor(nft.rarity);x.lineWidth=3;
+  x.strokeRect(2,2,196,196);
+  // ID watermark
+  x.fillStyle='rgba(255,255,255,.25)';x.font='8px Courier New';x.textAlign='center';
+  x.fillText(nft.id,100,192);
+}
+
+// ─── MAP GENERATION ───────────────────────────────────────
+const TILE=24,MAP_W=90,MAP_H=90;
+let maps={};
+
+function genMap(worldId){
+  const W=MAP_W,H=MAP_H;
+  const data=[];
+  for(let y=0;y<H;y++){data[y]=[];for(let x=0;x<W;x++)data[y][x]=1;}
+  const rooms=[];
+  function carve(x,y,rw,rh){
+    rooms.push({x,y,w:rw,h:rh,cx:x+Math.floor(rw/2),cy:y+Math.floor(rh/2)});
+    for(let ry=y;ry<y+rh;ry++)for(let rx=x;rx<x+rw;rx++)if(rx>0&&ry>0&&rx<W-1&&ry<H-1)data[ry][rx]=0;
+  }
+  function split(x,y,sw,sh,d){
+    if(d>5||sw<10||sh<10){carve(x+1,y+1,sw-2,sh-2);return;}
+    if(sw>sh){
+      const mid=x+6+Math.floor(Math.random()*(sw-10));
+      split(x,y,mid-x,sh,d+1);split(mid,y,sw-(mid-x),sh,d+1);
+      const cy=y+2+Math.floor(Math.random()*(sh-4));
+      for(let cx=x;cx<mid+2&&cx<W;cx++)if(cy<H)data[cy][cx]=0;
+    }else{
+      const mid=y+6+Math.floor(Math.random()*(sh-10));
+      split(x,y,sw,mid-y,d+1);split(x,mid,sw,sh-(mid-y),d+1);
+      const cx=x+2+Math.floor(Math.random()*(sw-4));
+      for(let cy=y;cy<mid+2&&cy<H;cy++)if(cx<W)data[cy][cx]=0;
+    }
+  }
+  split(1,1,W-2,H-2,0);
+
+  const used=new Set();
+  function rf(minDist){
+    for(let t=0;t<400;t++){
+      const x=2+Math.floor(Math.random()*(W-4)),y=2+Math.floor(Math.random()*(H-4));
+      const k=x+','+y;
+      if(data[y][x]===0&&!used.has(k)){
+        if(minDist){const ok=!([...used].some(uk=>{const[ux,uy]=uk.split(',').map(Number);return Math.hypot(ux-x,uy-y)<minDist;}));if(!ok)continue;}
+        used.add(k);return{x,y};
+      }
+    }
+    return rooms.length?{x:rooms[0].cx,y:rooms[0].cy}:{x:5,y:5};
+  }
+
+  // Portals — connect to specific worlds based on placement
+  const portalColors={veil:'#aa44ff',ember:'#ff4422',crystal:'#22aaff',rot:'#44ff88',void:'#cc55ff',mirror:'#ff44cc',dream:'#44ffaa',abyss:'#3333ff'};
+  const portals=[];
+  const otherWorlds=WORLD_ORDER.filter(id=>id!==worldId);
+  for(let i=0;i<6;i++){
+    const p=rf(8);
+    const dest=otherWorlds[i%otherWorlds.length];
+    portals.push({...p,destWorld:dest,color:portalColors[dest]||'#ffffff',anim:Math.random()*Math.PI*2,variant:i%3});
+  }
+
+  // NPCs — 14 per world, mixed AI types
+  const NPC_TYPES=['lantern_wander','lantern_wander','clue_seeker','merchant','guard','eye_pet','eye_attack','eye_hypno','watcher','sage','mirror_self','dream_creature','void_knight','lantern_wander'];
+  const npcs=[];
+  for(let i=0;i<14;i++){
+    const p=rf(4);const type=NPC_TYPES[i%NPC_TYPES.length];
+    const isWander=type==='lantern_wander'||type==='clue_seeker';
+    const hues=[30,45,200,120,280,0,180,300];
+    npcs.push({
+      ...p,type,px:p.x*TILE+TILE/2,py:p.y*TILE+TILE/2,
+      hp:type==='guard'?60:type==='void_knight'?80:30,
+      maxHp:type==='guard'?60:type==='void_knight'?80:30,
+      anim:Math.random()*Math.PI*2,dir:Math.random()*Math.PI*2,
+      state:'idle',stateTimer:60+Math.floor(Math.random()*120),
+      dialog:0,aggro:false,dead:false,deathTimer:0,
+      lanternColor:`hsl(${hues[i%hues.length]},90%,62%)`,
+      lanternAnim:Math.random()*Math.PI*2,
+      goal:null,goalTarget:null,goalTimer:0,cluesFound:0,
+      llmPending:false,llmDialog:'',
+      costume:i%5, // 0-4 impossible costume variant
+      id:`npc_${worldId}_${i}`,
+      omg:Math.floor(Math.random()*10),
+    });
+  }
+
+  // Items — rich variety
+  const ITEM_TYPES=['key','health','food','drink','armor','weapon_sword','weapon_axe','weapon_bow','clue_scroll','strange_gem','mirror_shard','void_crystal','dream_petal','ember_coal','nft_clue'];
+  const items=[];
+  for(let i=0;i<28;i++){const p=rf(3);items.push({...p,type:ITEM_TYPES[i%ITEM_TYPES.length],collected:false,anim:Math.random()*Math.PI*2});}
+
+  // Computers / terminals
+  const computers=[];
+  for(let i=0;i<5;i++){const p=rf(6);computers.push({...p,hacked:false,puzzle:genPuzzle(),anim:0});}
+
+  // Doors — some locked, some color-gated
+  const doors=[];
+  const doorColors=['#662299','#229966','#996622','#224499','#992244'];
+  for(let i=0;i<4;i++){const p=rf(5);doors.push({...p,open:false,locked:i%3===0,color:doorColors[i%doorColors.length],keyColor:i%2===0?'gold':'silver'});}
+
+  // Save shrines
+  const saves=[];
+  for(let i=0;i<3;i++){const p=rf(8);saves.push({...p,used:false,anim:0});}
+
+  // Boss
+  const bp=rf(12);
+  const boss={...bp,type:'boss_'+worldId,hp:250,maxHp:250,px:bp.x*TILE,py:bp.y*TILE,
+    anim:0,aggro:false,dead:false,deathTimer:0,phase:1,projectiles:[]};
+
+  // Secret NFT locations
+  const nftSpots=[];
+  for(let i=0;i<2;i++){const p=rf(10);nftSpots.push({...p,found:false,anim:Math.random()*Math.PI*2});}
+
+  const spawn=rooms.length?rooms[0]:{x:5,y:5};
+  return{data,rooms,portals,npcs,items,computers,doors,saves,boss,nftSpots,spawn};
+}
+
+function genPuzzle(){
+  const t=['sequence','color_mem','pattern','mirror','surreal'][Math.floor(Math.random()*5)];
+  if(t==='sequence'){
+    const s=Array.from({length:5},()=>'ABCDEF0123456789'[Math.floor(Math.random()*16)]);
+    return{type:'sequence',prompt:'ECHO THE CODE: '+s.join(' '),answer:s.join(''),seq:s};
+  }
+  if(t==='color_mem'){
+    const C=['RED','GRN','BLU','YLW','PRP','WHT'];
+    const s=Array.from({length:4},()=>C[Math.floor(Math.random()*C.length)]);
+    return{type:'color_mem',shown:s,prompt:'REMEMBER THE COLORS:\n'+s.join(' → '),answer:s.join('')};
+  }
+  if(t==='pattern'){
+    const n=Array.from({length:4},()=>1+Math.floor(Math.random()*9));
+    return{type:'pattern',prompt:'COMPUTE: '+n.join(' + ')+' = ?',answer:String(n.reduce((a,b)=>a+b,0))};
+  }
+  if(t==='mirror'){
+    const w='LANTERN';
+    return{type:'mirror',prompt:'REVERSE THIS WORD: '+w,answer:w.split('').reverse().join('')};
+  }
+  // surreal
+  const ans=['∞','◈','⊕','∆','Ω'][Math.floor(Math.random()*5)];
+  const opts=['∞','◈','⊕','∆','Ω'];
+  return{type:'surreal',prompt:'CHOOSE THE SYMBOL THAT DOES NOT BELONG',answer:ans,options:opts};
+}
+
+// ─── GAME STATE ───────────────────────────────────────────
+let gameState='title';
+let currentWorldId='veil';
+let currentMap=null;
+let globalTime=0;
+let portalCooldown=0;
+let msgTimeout=null;
+let hackTarget=null,hackInput=[];
+let talkState=null,talkNPC=null;
+let nftModalOpen=false;
+let transitioning=false;
+
+let player={
+  px:300,py:300,x:10,y:10,
+  hp:18,maxHp:18,armor:false,armorHp:2,
+  exp:0,level:1,rank:'WANDERER',
+  inventory:[],invSize:7,keys:0,omg:0,
+  facing:0,walkAnim:0,
+  attackTimer:0,hitTimer:0,dead:false,
+  worldsVisited:new Set(['veil']),
+  cluesCollected:0,
+  omgSpent:0,
+};
+let camera={x:0,y:0};
+let ghosts=[],particles=[],floatingTexts=[];
+let maps={};
+
+const RANKS=['WANDERER','SEEKER','HUNTER','ADEPT','SHADOW','PHANTOM','VOID WALKER','LANTERN BEARER','OMEGA'];
+const EXP_LV=[0,60,160,360,720,1400,2400,4000,6400];
+
+// Surrealist clues — psychological, layered
+const CLUES=[
+  'The lantern casts six shadows. Count only the one that moves.',
+  'In every mirror world, left is right and truth is a question.',
+  'Three eyes opened. One was already watching you.',
+  'The sequence is not the code. The code is your fear of the sequence.',
+  'Follow the wanderer whose lantern is the color of your last dream.',
+  'The door with no handle opens from the other side of thought.',
+  'Void crystals remember every world they have passed through.',
+  'If the music slows — stop walking. Something is listening.',
+  'Seven portals. One leads back before the beginning.',
+  'The boss was a wanderer once. It still carries a lantern.',
+  'NFT #001 is hidden behind a wall that only appears at midnight.',
+  'The mirror self knows what you forgot in the Veil.',
+  'Sum the symbols. The answer is not a number.',
+  'A dream petal placed at the shrine opens a hidden door.',
+  'The abyss world has no floor — only the illusion of one.',
+  'Two wanderers with the same lantern color are the same being.',
+  'Count the eyes on the walls. Subtract the ones that blink.',
+  'The ember coal is not fuel. It is a key to the crystal gate.',
+];
+
+// ─── JOYSTICK ─────────────────────────────────────────────
+const jZone=document.getElementById('jZone');
+const jKnob=document.getElementById('jKnob');
+let joy={active:false,dx:0,dy:0,tid:-1,bx:0,by:0};
+const JR=48;
+
+jZone.addEventListener('touchstart',e=>{
+  e.preventDefault();uAC();
+  const t=e.changedTouches[0];
+  const r=jZone.getBoundingClientRect();
+  joy={active:true,dx:0,dy:0,tid:t.identifier,bx:r.left+r.width/2,by:r.top+r.height/2};
+},{passive:false});
+
+window.addEventListener('touchmove',e=>{
+  for(const t of e.changedTouches){
+    if(t.identifier!==joy.tid)continue;
+    const rdx=t.clientX-joy.bx,rdy=t.clientY-joy.by;
+    const d=Math.min(Math.hypot(rdx,rdy),JR);
+    const a=Math.atan2(rdy,rdx);
+    joy.dx=Math.cos(a)*(d/JR);joy.dy=Math.sin(a)*(d/JR);
+    jKnob.style.left=(58+joy.dx*JR-26)+'px';
+    jKnob.style.top=(58+joy.dy*JR-26)+'px';
+  }
+},{passive:false});
+
+window.addEventListener('touchend',e=>{
+  for(const t of e.changedTouches){
+    if(t.identifier===joy.tid){
+      joy={active:false,dx:0,dy:0,tid:-1,bx:0,by:0};
+      jKnob.style.left='44px';jKnob.style.top='44px';
+    }
+  }
+},{passive:false});
+
+// ─── ATTACK BUTTON ────────────────────────────────────────
+document.getElementById('atkBtn').addEventListener('touchstart',e=>{e.preventDefault();uAC();doAttack();},{passive:false});
+
+// ─── INTERACT BUTTON ──────────────────────────────────────
+document.getElementById('interactBtn').addEventListener('touchstart',e=>{
+  e.preventDefault();uAC();
+  tryInteractNearest();
+},{passive:false});
+
+function tryInteractNearest(){
+  if(!currentMap)return;
+  const RANGE=60;
+  // Check NPCs
+  for(const npc of currentMap.npcs){
+    if(npc.dead)continue;
+    if(Math.hypot(npc.px-player.px,npc.py-player.py)<RANGE){openTalk(npc);return;}
+  }
+  // Check computers
+  for(const c of currentMap.computers){
+    if(!c.hacked&&Math.hypot(c.x*TILE+TILE/2-player.px,c.y*TILE+TILE/2-player.py)<RANGE){openHack(c);return;}
+  }
+  // Check doors
+  for(const d of currentMap.doors){
+    if(!d.open&&Math.hypot(d.x*TILE+TILE/2-player.px,d.y*TILE+TILE/2-player.py)<RANGE){tryDoor(d);return;}
+  }
+  // Check NFT spots
+  for(const n of currentMap.nftSpots){
+    if(!n.found&&Math.hypot(n.x*TILE+TILE/2-player.px,n.y*TILE+TILE/2-player.py)<RANGE){
+      n.found=true;sfx.secret();mintNFT(currentWorldId,'exploration');
+      showMsg('✦ NFT ARTIFACT DISCOVERED ✦');return;
+    }
+  }
+}
+
+// ─── COLLISION ─────────────────────────────────────────────
+function isSolid(wx,wy){
+  const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TILE);
+  if(tx<0||ty<0||tx>=MAP_W||ty>=MAP_H)return true;
+  if(currentMap.data[ty][tx]===1)return true;
+  for(const d of currentMap.doors)if(!d.open&&d.x===tx&&d.y===ty)return true;
+  return false;
+}
+
+// ─── MOVE PLAYER ───────────────────────────────────────────
+function movePlayer(){
+  if(!joy.active||player.dead||hackTarget||talkNPC||transitioning)return;
+  if(Math.hypot(joy.dx,joy.dy)<0.07)return;
+  player.facing=Math.atan2(joy.dy,joy.dx);
+  const spd=2.6*Math.hypot(joy.dx,joy.dy);
+  const nx=joy.dx*spd,ny=joy.dy*spd;
+  const R=7;
+  // Slide along walls
+  if(!isSolid(player.px+nx+R*Math.sign(nx||1),player.py))player.px+=nx;
+  else if(!isSolid(player.px+nx+R*Math.sign(nx||1),player.py-R)){player.px+=nx;player.py-=.8;}
+  else if(!isSolid(player.px+nx+R*Math.sign(nx||1),player.py+R)){player.px+=nx;player.py+=.8;}
+  if(!isSolid(player.px,player.py+ny+R*Math.sign(ny||1)))player.py+=ny;
+  else if(!isSolid(player.px-R,player.py+ny+R*Math.sign(ny||1))){player.py+=ny;player.px-=.8;}
+  else if(!isSolid(player.px+R,player.py+ny+R*Math.sign(ny||1))){player.py+=ny;player.px+=.8;}
+  player.walkAnim+=.2;
+  player.x=Math.floor(player.px/TILE);player.y=Math.floor(player.py/TILE);
+}
+
+// ─── ATTACK ────────────────────────────────────────────────
+function doAttack(){
+  if(player.attackTimer>0||player.dead)return;
+  sfx.hit();player.attackTimer=22;
+  const ax=player.px+Math.cos(player.facing)*34,ay=player.py+Math.sin(player.facing)*34;
+  spawnParts(ax,ay,'#ffcc44',10);
+  const wBonus=(player.inventory.find(i=>i.type==='weapon_sword')?10:0)+(player.inventory.find(i=>i.type==='weapon_axe')?15:0);
+  const dmg=8+(player.level-1)*3+wBonus;
+  const R=42;
+  currentMap.npcs.forEach(npc=>{
+    if(npc.dead)return;
+    if(Math.hypot(npc.px-ax,npc.py-ay)<R){
+      npc.hp-=dmg;spawnParts(npc.px,npc.py,'#ff4422',8);
+      if(!['lantern_wander','clue_seeker','merchant','sage','watcher','mirror_self','dream_creature'].includes(npc.type))npc.aggro=true;
+      if(npc.hp<=0)killNPC(npc);
+    }
+  });
+  const b=currentMap.boss;
+  if(!b.dead&&Math.hypot(b.px-ax,b.py-ay)<R+16){
+    b.hp-=dmg;spawnParts(b.px,b.py,'#ff2200',14);
+    updateBossBar(b);if(b.hp<=0)killBoss(b);
+  }
+}
+
+function killNPC(npc){
+  npc.dead=true;npc.deathTimer=60;spawnGhost(npc.px,npc.py);sfx.die();
+  gainExp(18+player.level*6);
+  if(Math.random()<.4)currentMap.items.push({x:Math.floor(npc.px/TILE),y:Math.floor(npc.py/TILE),type:'health',collected:false,anim:0});
+  if(Math.random()<.12)currentMap.items.push({x:Math.floor(npc.px/TILE),y:Math.floor(npc.py/TILE),type:'strange_gem',collected:false,anim:0});
+  if(Math.random()<.06){player.omg+=(npc.omg||5);document.getElementById('omgLabel').textContent='⬡ OMG: '+player.omg;sfx.coin();}
+}
+
+function killBoss(b){
+  b.dead=true;b.deathTimer=120;spawnGhost(b.px,b.py);sfx.die();
+  setTimeout(()=>sfx.portal(),600);gainExp(300);
+  document.getElementById('bossBar').style.display='none';
+  showMsg('✦ BOSS SLAIN — PORTAL TEARS OPEN ✦\n⬡ +50 OMG REWARDED',4000);
+  player.omg+=50;document.getElementById('omgLabel').textContent='⬡ OMG: '+player.omg;
+  mintNFT(currentWorldId,'boss_kill');
+  setTimeout(()=>{
+    const dest=WORLD_ORDER.find(id=>id!==currentWorldId)||'veil';
+    currentMap.portals.push({x:Math.floor(b.px/TILE),y:Math.floor(b.py/TILE),destWorld:dest,color:'#ffffff',anim:0,variant:2});
+  },2500);
+}
+
+function updateBossBar(b){
+  document.getElementById('bossBar').style.display='block';
+  document.getElementById('bossName').textContent='⚡ '+b.type.replace('boss_','').toUpperCase().replace('_',' ')+' ⚡';
+  document.getElementById('bossFill').style.width=(b.hp/b.maxHp*100)+'%';
+}
+
+// ─── PLAYER DAMAGE ─────────────────────────────────────────
+function hurtPlayer(dmg){
+  if(player.hitTimer>0||player.dead)return;
+  player.hitTimer=42;
+  if(player.armor){player.armorHp--;if(player.armorHp<=0){player.armor=false;showMsg('Armor shattered!');}sfx.getHit();spawnParts(player.px,player.py,'#4488ff',10);renderHearts();return;}
+  player.hp-=dmg;sfx.getHit();spawnParts(player.px,player.py,'#ff2244',12);renderHearts();
+  if(player.hp<=0)diePlayer();
+}
+function diePlayer(){player.dead=true;sfx.die();spawnGhost(player.px,player.py);const d=document.getElementById('deathScreen');d.style.display='flex';setTimeout(()=>d.classList.add('show'),80);}
+function respawn(){player.hp=Math.ceil(player.maxHp/2);player.dead=false;player.hitTimer=0;document.getElementById('deathScreen').style.display='none';document.getElementById('deathScreen').classList.remove('show');initWorld(currentWorldId,false);renderHearts();}
+
+// ─── WORLD INIT & TRANSITION ───────────────────────────────
+function initWorld(worldId,fromPortal){
+  if(!maps[worldId])maps[worldId]=genMap(worldId);
+  currentWorldId=worldId;currentMap=maps[worldId];
+  player.worldsVisited.add(worldId);
+  const W=WORLDS[worldId];
+  const sp=fromPortal?(currentMap.portals[0]||currentMap.spawn):currentMap.spawn;
+  if(fromPortal&&currentMap.portals[0]){player.px=currentMap.portals[0].x*TILE+50;player.py=currentMap.portals[0].y*TILE;}
+  else{player.px=sp.cx*TILE+TILE/2||sp.x*TILE+TILE/2;player.py=sp.cy*TILE+TILE/2||sp.y*TILE+TILE/2;}
+  player.x=Math.floor(player.px/TILE);player.y=Math.floor(player.py/TILE);
+  portalCooldown=100;
+  document.getElementById('worldLabel').textContent=W?W.name:'UNKNOWN';
+  document.getElementById('bossBar').style.display='none';
+  changeMusic(worldId);
+}
+
+function doWorldTransition(destId){
+  if(transitioning)return;
+  transitioning=true;
+  const tr=document.getElementById('wTransition');
+  const tn=document.getElementById('wTransName');
+  const W=WORLDS[destId];
+  tr.style.opacity='1';
+  tn.textContent=(W?W.name:'UNKNOWN')+'\n'+(W?W.desc:'');
+  tn.style.opacity='1';
+  sfx.portal();
+  setTimeout(()=>{
+    initWorld(destId,true);
+    setTimeout(()=>{tr.style.opacity='0';tn.style.opacity='0';setTimeout(()=>transitioning=false,700);},600);
+  },900);
+}
+
+// ─── NPC AI ────────────────────────────────────────────────
+const NPC_DIALOGS={
+  lantern_wander:[
+    "My lantern led me here through the veil.",
+    "I found a clue near the eastern passage. Something about mirrors.",
+    "Three portals in one night. My mind is... stretched.",
+    "Follow the light. It knows more than we do.",
+    "I've been to the Abyss. The music there has no beat.",
+    "The NFT I found in the Crystal Deep — it changed color at midnight.",
+    "Another wanderer told me: the boss drops OMG tokens.",
+    "I saw my mirror self. It spoke first.",
+  ],
+  clue_seeker:[
+    "The sequence wasn't the answer. The FEEL of the sequence was.",
+    "Count everything. Even the things that don't exist yet.",
+    "I found a scroll near a void crystal. It said: RETNTAL. Read it again.",
+    "The pattern terminal in this world has a surreal answer. Think sideways.",
+    "I've collected 12 clue scrolls. Something is supposed to happen at 13.",
+    "The mirror world shows what the void hides.",
+    "Hack the terminal. The reward is always worth it.",
+  ],
+  merchant:[
+    "I trade in OMG tokens. Bring me strange gems.",
+    "A rare NFT went through here. Someone dropped it near the shrine.",
+    "Information costs nothing. Wisdom costs everything.",
+    "The void knight guards something valuable. I won't say what.",
+    "I've been in every world. Dream is the strangest by far.",
+  ],
+  sage:[
+    "The lantern is not a tool. It is a reminder.",
+    "Every shadow is a world that doesn't know it's a shadow.",
+    "You have been here before. Not in this life.",
+    "The music changes because you change.",
+    "Fear is the wall. The lantern is the door.",
+    "What you are looking for is looking for you.",
+  ],
+  watcher:["...","...","*blinks slowly*","I see you","It has always watched.","You are not the first light."],
+  guard:["Back.","This path is sealed.","...","Turn around."],
+  eye_pet:["*pulses warmly*","*nudges toward the passage*","*blinks twice slowly*","*its light matches yours*"],
+  mirror_self:["I finished what you started.","You dropped this in the other world.","Do you remember choosing to come here?","We share a lantern but not a shadow.","I am what you become if you stop walking."],
+  dream_creature:["The flowers here remember being clouds.","Sleep is just another portal.","I dreamed of your world once. It was very loud.","The petals bloom when the music slows. Listen."],
+  void_knight:["The void does not forgive light.","Turn back or be consumed.","Your lantern offends this darkness.","I was a wanderer. The void offered... certainty."],
+  eye_attack:["","","",""],
+  eye_hypno:["","","",""],
+};
+
+function npcThink(npc){
+  // LLM-style response using Anthropic API (fires async, shows when done)
+  if(npc.llmPending)return;
+  const worldName=WORLDS[currentWorldId]?.name||'unknown';
+  const context=`You are an NPC called ${npc.type.replace('_',' ')} in a surrealist RPG called LANTERN. The current world is ${worldName}. The player has visited ${player.worldsVisited.size} worlds and found ${player.cluesCollected} clues. Reply in character with ONE short cryptic sentence (max 15 words). Be psychological, poetic, and mysterious. Reference the lantern or light metaphorically.`;
+  npc.llmPending=true;
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-6',max_tokens:60,
+      messages:[{role:'user',content:context}]
+    })
+  }).then(r=>r.json()).then(d=>{
+    const text=d.content?.[0]?.text||'';
+    if(text){npc.llmDialog=text.trim().replace(/^"|"$/g,'');}
+    npc.llmPending=false;
+  }).catch(()=>{npc.llmPending=false;});
+}
+
+function openTalk(npc){
+  if(talkNPC===npc)return;
+  talkNPC=npc;talkState=true;
+  const el=document.getElementById('talkBox');
+  el.style.display='block';
+  document.getElementById('npcName').textContent='[ '+npc.type.replace(/_/g,' ').toUpperCase()+' ]';
+  // Use LLM response if ready, else use canned dialog
+  const lines=NPC_DIALOGS[npc.type]||["..."];
+  let line=npc.llmDialog||lines[npc.dialog%lines.length];
+  npc.dialog++;npc.llmDialog='';
+  document.getElementById('talkText').textContent='"'+line+'"';
+  // Choices
+  const ch=document.getElementById('talkChoices');ch.innerHTML='';
+  if(['lantern_wander','clue_seeker','merchant'].includes(npc.type)){
+    [['Ask about clues',()=>showMsg('CLUE: '+CLUES[Math.floor(Math.random()*CLUES.length)],4000)],
+     ['Trade (costs 5 OMG)',()=>{if(player.omg>=5){player.omg-=5;document.getElementById('omgLabel').textContent='⬡ OMG: '+player.omg;showMsg('Traded! Health restored.');player.hp=Math.min(player.maxHp,player.hp+4);renderHearts();}else showMsg('Not enough OMG.');}],
+     ['Ask about the world',()=>showMsg((WORLDS[currentWorldId]?.desc||'A strange place...'),3000)],
+    ].forEach(([label,fn])=>{const b=document.createElement('button');b.className='tChoice';b.textContent=label;b.onclick=()=>{fn();};ch.appendChild(b);});
+  }
+  // Fire LLM for next time
+  npcThink(npc);
+}
+function closeTalk(){talkState=false;talkNPC=null;document.getElementById('talkBox').style.display='none';}
+
+// ─── HACK / TERMINAL ───────────────────────────────────────
+function openHack(c){
+  hackTarget=c;hackInput=[];
+  document.getElementById('hackBox').style.display='block';
+  document.getElementById('hackPrompt').textContent=c.puzzle.prompt;
+  document.getElementById('hackStatus').textContent='';
+  const seq=document.getElementById('hackSeq');seq.innerHTML='';
+  sfx.hack();
+  const p=c.puzzle;
+  const makeBtn=(label,fn)=>{const b=document.createElement('button');b.className='hackBtn';b.textContent=label;b.addEventListener('touchstart',e=>{e.preventDefault();fn();},{passive:false});b.onclick=fn;return b;};
+  if(p.type==='sequence'){
+    '0123456789ABCDEF'.split('').forEach(ch=>seq.appendChild(makeBtn(ch,()=>{hackInput.push(ch);checkHack(c);})));
+  }else if(p.type==='color_mem'){
+    document.getElementById('hackStatus').textContent='Memorize...';
+    setTimeout(()=>{
+      document.getElementById('hackPrompt').textContent='RECALL THE ORDER:';
+      document.getElementById('hackStatus').textContent='';
+      ['RED','GRN','BLU','YLW','PRP','WHT'].forEach(ch=>seq.appendChild(makeBtn(ch,()=>{hackInput.push(ch);document.getElementById('hackStatus').textContent=hackInput.join('→');if(hackInput.length===p.shown.length)checkHack(c);})));
+    },2800);
+  }else if(p.type==='surreal'){
+    p.options.forEach(ch=>seq.appendChild(makeBtn(ch,()=>{hackInput=[ch];checkHack(c);})));
+  }else if(p.type==='mirror'){
+    // Letter buttons
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(ch=>seq.appendChild(makeBtn(ch,()=>{hackInput.push(ch);document.getElementById('hackStatus').textContent=hackInput.join('');})));
+    seq.appendChild(makeBtn('↵',()=>checkHack(c)));
+    seq.appendChild(makeBtn('⌫',()=>{hackInput.pop();document.getElementById('hackStatus').textContent=hackInput.join('');}));
+  }else{
+    '0123456789'.split('').forEach(ch=>seq.appendChild(makeBtn(ch,()=>{hackInput.push(ch);document.getElementById('hackStatus').textContent=hackInput.join('');})));
+    seq.appendChild(makeBtn('↵',()=>checkHack(c)));
+    seq.appendChild(makeBtn('⌫',()=>{hackInput.pop();document.getElementById('hackStatus').textContent=hackInput.join('');}));
+  }
+}
+function checkHack(c){
+  const inp=hackInput.join('');
+  const ans=c.puzzle.type==='color_mem'?c.puzzle.shown.join(''):c.puzzle.answer;
+  if(inp===ans){
+    document.getElementById('hackStatus').textContent='✓ ACCESS GRANTED';c.hacked=true;
+    setTimeout(()=>{closeHack();showMsg('System cracked!\n⬡ +20 OMG REWARDED',2500);gainExp(40);player.omg+=20;document.getElementById('omgLabel').textContent='⬡ OMG: '+player.omg;sfx.portal();},700);
+  }else if(inp.length>=ans.length&&c.puzzle.type!=='sequence'){
+    document.getElementById('hackStatus').textContent='✗ DENIED — retry';hackInput=[];
+  }else if(c.puzzle.type==='sequence'&&inp.length>=c.puzzle.answer.length){
+    document.getElementById('hackStatus').textContent='✗ DENIED — retry';hackInput=[];
+  }
+}
+function closeHack(){document.getElementById('hackBox').style.display='none';hackTarget=null;}
+
+// ─── DOORS ────────────────────────────────────────────────
+function tryDoor(d){
+  if(d.locked&&player.keys>0){d.open=true;player.keys--;sfx.door();showMsg('Key used — door opened!');}
+  else if(!d.locked){d.open=true;sfx.door();showMsg('Door creaks open...');}
+  else showMsg('Locked. You need a key.');
+}
+
+// ─── ITEM PICKUP ───────────────────────────────────────────
+function checkPickup(){
+  currentMap.items.forEach(item=>{
+    if(item.collected)return;
+    if(Math.hypot(item.x*TILE+TILE/2-player.px,item.y*TILE+TILE/2-player.py)<24){
+      if(!addToInventory(item))return;
+      item.collected=true;
+      player.cluesCollected+=item.type==='clue_scroll'?1:0;
+      const msgs={
+        key:'Found a key!',health:'Health restored!',food:'Found food.',drink:'Found a drink.',
+        armor:'Armor equipped!',weapon_sword:'Sword acquired!',weapon_axe:'Axe acquired!',weapon_bow:'Bow acquired!',
+        clue_scroll:'CLUE: '+CLUES[Math.floor(Math.random()*CLUES.length)],
+        strange_gem:'Strange gem vibrates...',mirror_shard:'Mirror shard — carries a reflection of another self.',
+        void_crystal:'Void crystal — cold as un-memory.',dream_petal:'Dream petal — smells like a sound.',
+        ember_coal:'Ember coal — warm. Not with heat.',nft_clue:'NFT trail detected nearby...',
+      };
+      showMsg(msgs[item.type]||'Item found.',item.type==='clue_scroll'?4000:2000);
+      if(item.type==='key')player.keys++;
+      if(item.type==='armor'){player.armor=true;player.armorHp=2;renderHearts();}
+      if(item.type==='strange_gem'){gainExp(15);player.omg+=3;document.getElementById('omgLabel').textContent='⬡ OMG: '+player.omg;}
+      if(item.type==='nft_clue')mintNFT(currentWorldId,'clue_item');
+    }
+  });
+}
+
+// ─── PORTALS ──────────────────────────────────────────────
+function checkPortals(){
+  if(portalCooldown>0){portalCooldown--;return;}
+  for(const p of currentMap.portals){
+    if(Math.hypot(p.x*TILE+TILE/2-player.px,p.y*TILE+TILE/2-player.py)<22){
+      portalCooldown=130;
+      doWorldTransition(p.destWorld);
+      return;
+    }
+  }
+}
+
+// ─── SAVE SHRINES ─────────────────────────────────────────
+function checkSaves(){
+  currentMap.saves.forEach(s=>{
+    if(s.used)return;
+    if(Math.hypot(s.x*TILE+TILE/2-player.px,s.y*TILE+TILE/2-player.py)<26){
+      s.used=true;saveGame();player.hp=Math.min(player.maxHp,player.hp+2);renderHearts();
+      spawnParts(player.px,player.py,'#88aaff',16);
+    }
+  });
+}
+
+// ─── NPC AI UPDATE ────────────────────────────────────────
+function updateNPCs(){
+  currentMap.npcs.forEach(npc=>{
+    if(npc.dead)return;
+    npc.anim+=.05;npc.lanternAnim+=.07;npc.stateTimer--;
+    const dx=player.px-npc.px,dy=player.py-npc.py,dist=Math.hypot(dx,dy);
+
+    if(npc.type==='lantern_wander'||npc.type==='clue_seeker'){updateWanderer(npc);}
+    else if(npc.type==='eye_attack'){if(dist<120){const a=Math.atan2(dy,dx);moveNPC(npc,Math.cos(a)*1.7,Math.sin(a)*1.7);if(dist<20)hurtPlayer(2);}}
+    else if(npc.type==='eye_hypno'){npc.px+=Math.cos(npc.dir)*.6;npc.py+=Math.sin(npc.dir)*.6;if(npc.stateTimer<0){npc.dir=Math.random()*Math.PI*2;npc.stateTimer=120+Math.random()*160;}}
+    else if(npc.type==='eye_pet'){if(dist>80&&dist<240){const a=Math.atan2(dy,dx);npc.px+=Math.cos(a)*.9;npc.py+=Math.sin(a)*.9;}}
+    else if(npc.type==='guard'||npc.type==='void_knight'){
+      if(dist<110||npc.aggro){npc.aggro=true;const a=Math.atan2(dy,dx),spd=1.4+player.level*.08;moveNPC(npc,Math.cos(a)*spd,Math.sin(a)*spd);if(dist<22)hurtPlayer(npc.type==='void_knight'?4:2);}
+    }else if(npc.type==='mirror_self'){
+      // Mirror self mirrors player movement with delay
+      const a=Math.atan2(dy,dx)+Math.PI;moveNPC(npc,Math.cos(a)*1.1,Math.sin(a)*1.1);
+      if(dist<30){showMsg('The mirror self brushes past you...',2000);hurtPlayer(1);}
+    }else if(npc.type==='dream_creature'){
+      npc.px+=Math.cos(npc.anim*.3)*Math.sin(npc.anim*.7)*1.2;
+      npc.py+=Math.sin(npc.anim*.4)*Math.cos(npc.anim*.5)*1.2;
+    }else{
+      if(npc.stateTimer<0){npc.dir=Math.random()*Math.PI*2;npc.state=Math.random()<.4?'idle':'walk';npc.stateTimer=80+Math.random()*110;}
+      if(npc.state==='walk')moveNPC(npc,Math.cos(npc.dir)*.75,Math.sin(npc.dir)*.75);
+    }
+    npc.px=Math.max(TILE,Math.min((MAP_W-2)*TILE,npc.px));
+    npc.py=Math.max(TILE,Math.min((MAP_H-2)*TILE,npc.py));
+  });
+}
+
+function moveNPC(npc,vx,vy){
+  if(!isSolid(npc.px+vx,npc.py))npc.px+=vx;else npc.dir+=Math.PI*.4+Math.random()*.4;
+  if(!isSolid(npc.px,npc.py+vy))npc.py+=vy;else npc.dir-=Math.PI*.4+Math.random()*.4;
+}
+
+function updateWanderer(npc){
+  npc.goalTimer--;
+  if(!npc.goal||npc.goalTimer<0){
+    const r=Math.random();
+    if(r<.3&&currentMap.items.some(i=>!i.collected&&i.type==='clue_scroll')){
+      const scrolls=currentMap.items.filter(i=>!i.collected&&i.type==='clue_scroll');
+      const t=scrolls[Math.floor(Math.random()*scrolls.length)];
+      npc.goal='seek_clue';npc.goalTarget={px:t.x*TILE+TILE/2,py:t.y*TILE+TILE/2};npc.goalTimer=500;
+    }else if(r<.5&&!npc.portalUsed&&npc.cluesFound>0){
+      const t=currentMap.portals[Math.floor(Math.random()*currentMap.portals.length)];
+      if(t){npc.goal='seek_portal';npc.goalTarget={px:t.x*TILE+TILE/2,py:t.y*TILE+TILE/2};npc.goalTimer=700;}
+    }else if(r<.65&&currentMap.computers.some(c=>!c.hacked)){
+      const cs=currentMap.computers.filter(c=>!c.hacked);const t=cs[Math.floor(Math.random()*cs.length)];
+      npc.goal='hack';npc.goalTarget={px:t.x*TILE+TILE/2,py:t.y*TILE+TILE/2};npc.goalTimer=400;
+    }else{
+      npc.goal='explore';npc.goalTarget={px:(4+Math.floor(Math.random()*(MAP_W-8)))*TILE,py:(4+Math.floor(Math.random()*(MAP_H-8)))*TILE};npc.goalTimer=350;
+    }
+  }
+  if(!npc.goalTarget)return;
+  const gdx=npc.goalTarget.px-npc.px,gdy=npc.goalTarget.py-npc.py,gdist=Math.hypot(gdx,gdy);
+  if(gdist<20){
+    if(npc.goal==='seek_clue'){npc.cluesFound++;spawnParts(npc.px,npc.py,'#aa44ff',6);currentMap.items.forEach(i=>{if(!i.collected&&i.type==='clue_scroll'&&Math.hypot(i.x*TILE-npc.px,i.y*TILE-npc.py)<44)i.collected=true;});}
+    if(npc.goal==='seek_portal'){sfx.portal();npc.portalUsed=true;spawnParts(npc.px,npc.py,npc.lanternColor,10);npc.px=(4+Math.floor(Math.random()*(MAP_W-8)))*TILE;npc.py=(4+Math.floor(Math.random()*(MAP_H-8)))*TILE;npc.portalUsed=false;}
+    if(npc.goal==='hack'){spawnParts(npc.px,npc.py,'#00ff44',5);}
+    npc.goal=null;npc.goalTarget=null;return;
+  }
+  const a=Math.atan2(gdy,gdx);moveNPC(npc,Math.cos(a)*1.15,Math.sin(a)*1.15);npc.dir=a;
+}
+
+// ─── BOSS AI ──────────────────────────────────────────────
+function updateBoss(){
+  const b=currentMap.boss;if(b.dead)return;
+  b.anim+=.055;
+  const dx=player.px-b.px,dy=player.py-b.py,dist=Math.hypot(dx,dy);
+  if(dist<180||b.aggro){
+    if(!b.aggro){b.aggro=true;updateBossBar(b);showMsg('⚡ A PRESENCE AWAKENS...',2000);}
+    const a=Math.atan2(dy,dx),spd=b.hp<b.maxHp*.5?2.2:1.4;
+    if(!isSolid(b.px+Math.cos(a)*spd,b.py))b.px+=Math.cos(a)*spd;
+    if(!isSolid(b.px,b.py+Math.sin(a)*spd))b.py+=Math.sin(a)*spd;
+    if(dist<34)hurtPlayer(3);
+    // Phase 2: projectile-like AoE
+    if(b.hp<b.maxHp*.5&&Math.random()<.015){spawnParts(b.px,b.py,'#ff4400',8);if(dist<120)hurtPlayer(2);}
+    // Phase 3: speed burst
+    if(b.hp<b.maxHp*.25&&Math.random()<.008){if(dist<200)hurtPlayer(1);}
+  }
+}
+
+// ─── SAVE / LOAD ─────────────────────────────────────────
+function saveGame(){
+  try{localStorage.setItem('lantern3',JSON.stringify({player:{...player,worldsVisited:[...player.worldsVisited],inventory:player.inventory},world:currentWorldId,px:player.px,py:player.py,omg:NFT_LEDGER.omgBalance,nftCount:NFT_LEDGER.totalMinted}));showMsg('✦ SHRINE ACTIVATED — SAVED ✦');}catch(e){}
+}
+function loadGame(){
+  try{
+    const s=localStorage.getItem('lantern3');if(!s)return;
+    const d=JSON.parse(s);
+    Object.assign(player,d.player);
+    player.worldsVisited=new Set(d.player.worldsVisited||['veil']);
+    currentWorldId=d.world||'veil';
+    initWorld(currentWorldId,false);player.px=d.px||300;player.py=d.py||300;
+    NFT_LEDGER.omgBalance=d.omg||0;NFT_LEDGER.totalMinted=d.nftCount||0;
+    document.getElementById('omgLabel').textContent='⬡ OMG: '+player.omg;
+    renderHearts();renderInventory();showMsg('✦ SAVE RESTORED ✦');
+  }catch(e){}
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────
+function showMsg(txt,dur=2300){
+  const el=document.getElementById('msgBox');el.textContent=txt;el.style.opacity='1';
+  if(msgTimeout)clearTimeout(msgTimeout);
+  msgTimeout=setTimeout(()=>el.style.opacity='0',dur);
+}
+
+function renderHearts(){
+  const el=document.getElementById('hearts');el.innerHTML='';
+  for(let i=0;i<player.maxHp/2;i++){
+    const f=player.hp/2-i;const col=f>=1?'#ff2244':f>=.5?'#991133':'#280a12';
+    const d=document.createElement('div');d.className='heart';
+    d.innerHTML=`<svg width="18" height="16" viewBox="0 0 20 18"><path d="M10 16L2 8Q0 4 4 2Q8 0 10 4Q12 0 16 2Q20 4 18 8Z" fill="${col}"/></svg>`;
+    el.appendChild(d);
+  }
+  if(player.armor){const sh=document.createElement('span');sh.style.cssText='font-size:13px;margin-left:3px;';sh.textContent='🛡'.repeat(player.armorHp);el.appendChild(sh);}
+}
+
+const ITEM_EMOJI={key:'🗝',health:'❤️',food:'🍖',drink:'💧',armor:'🛡',weapon_sword:'⚔️',weapon_axe:'🪓',weapon_bow:'🏹',clue_scroll:'📜',strange_gem:'💎',mirror_shard:'🪞',void_crystal:'🔷',dream_petal:'🌸',ember_coal:'🔥',nft_clue:'📡',nft:'🖼'};
+
+function renderInventory(){
+  const el=document.getElementById('inventory');el.innerHTML='';
+  for(let i=0;i<player.invSize;i++){
+    const slot=document.createElement('div');const item=player.inventory[i];
+    slot.className='invSlot'+(item?.type==='nft'?' nft-slot':'');
+    if(item){
+      slot.textContent=ITEM_EMOJI[item.type]||'▫';
+      if(item.type==='nft'&&item.nft){const t=document.createElement('div');t.className='nft-tag';t.textContent=item.nft.rarity.substr(0,3).toUpperCase();slot.appendChild(t);}
+      if((item.count||1)>1){const c=document.createElement('div');c.className='icount';c.textContent=item.count;slot.appendChild(c);}
+      slot.dataset.idx=i;
+      let tapT=0;
+      slot.addEventListener('touchstart',e=>{
+        e.preventDefault();const now=Date.now();
+        if(now-tapT<350){// double-tap = drop
+          dropItem(i);
+        }else{singleTapItem(i);}
+        tapT=now;
+      },{passive:false});
+    }
+    el.appendChild(slot);
+  }
+}
+
+function singleTapItem(idx){
+  const item=player.inventory[idx];if(!item)return;
+  if(item.type==='nft'&&item.nft){showNFTModal(item.nft);return;}
+  if(['health','food','drink'].includes(item.type)){
+    player.hp=Math.min(player.maxHp,player.hp+(item.type==='health'?6:item.type==='food'?4:3));
+    renderHearts();showMsg(item.type==='health'?'Health restored!':item.type==='food'?'Nourished.':'Refreshed.');
+    item.count--;if(item.count<=0)player.inventory.splice(idx,1);renderInventory();
+  }
+}
+
+function dropItem(idx){
+  const item=player.inventory[idx];if(!item)return;
+  showMsg('Dropped: '+item.type);
+  currentMap.items.push({x:Math.floor(player.px/TILE),y:Math.floor(player.py/TILE),type:item.type,collected:false,anim:0});
+  player.inventory.splice(idx,1);renderInventory();sfx.pickup();
+}
+
+function addToInventory(item){
+  const ex=player.inventory.find(i=>i.type===item.type&&['food','drink','health','key'].includes(i.type));
+  if(ex){ex.count=(ex.count||1)+1;renderInventory();sfx.pickup();return true;}
+  if(player.inventory.length>=player.invSize){showMsg('Inventory full!');return false;}
+  player.inventory.push({type:item.type,count:1,nft:item.nft||null});
+  renderInventory();sfx.pickup();return true;
+}
+
+function gainExp(amt){
+  player.exp+=amt;
+  const next=EXP_LV[player.level]||99999;
+  if(player.exp>=next&&player.level<RANKS.length-1){
+    player.level++;player.rank=RANKS[player.level-1];player.maxHp+=4;player.hp=Math.min(player.hp+4,player.maxHp);
+    sfx.levelUp();showMsg('✦ LEVEL '+player.level+' — '+player.rank+' ✦',3500);
+    spawnParts(player.px,player.py,'#ffdd44',24);renderHearts();
+  }
+  document.getElementById('expFill').style.width=(Math.min(100,(player.exp/(EXP_LV[player.level]||1))*100))+'%';
+  document.getElementById('rankLabel').textContent=player.rank+' · LV '+player.level;
+}
+
+// ─── PARTICLES / GHOSTS ───────────────────────────────────
+function spawnParts(x,y,color,n){
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=1+Math.random()*3;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,color,size:2+Math.random()*3});}
+}
+function spawnGhost(x,y){ghosts.push({x,y,vy:-.55,alpha:1,size:14});}
+function floatText(x,y,text,color){floatingTexts.push({x,y,text,color,life:1,vy:-1});}
+
+// ─── CAMERA ───────────────────────────────────────────────
+function updateCamera(){
+  const tx=player.px-canvas.width/2,ty=player.py-canvas.height/2;
+  camera.x+=(tx-camera.x)*.13;camera.y+=(ty-camera.y)*.13;
+  camera.x=Math.max(0,Math.min(MAP_W*TILE-canvas.width,camera.x));
+  camera.y=Math.max(0,Math.min(MAP_H*TILE-canvas.height,camera.y));
+}
+
+// ─── DRAW MAP ─────────────────────────────────────────────
+function drawMap(){
+  const W=WORLDS[currentWorldId];
+  const sx0=Math.max(0,Math.floor(camera.x/TILE)-1),sy0=Math.max(0,Math.floor(camera.y/TILE)-1);
+  const sx1=Math.min(MAP_W,sx0+Math.ceil(canvas.width/TILE)+3);
+  const sy1=Math.min(MAP_H,sy0+Math.ceil(canvas.height/TILE)+3);
+  for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++){
+    const sx=x*TILE-camera.x,sy=y*TILE-camera.y;
+    if(currentMap.data[y][x]===1){
+      ctx.fillStyle=W.wall;ctx.fillRect(sx,sy,TILE,TILE);
+      // Wall art based on world
+      ctx.fillStyle=W.accent+'18';ctx.fillRect(sx+1,sy+1,TILE-2,3);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx,sy+TILE-3,TILE,3);
+      // Occasional wall symbol (surrealist)
+      if((x*7+y*13)%31===0){ctx.fillStyle=W.accent+'22';ctx.font='10px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(['△','○','✦','⬡','⊕','∞','◈'][(x+y)%7],sx+TILE/2,sy+TILE/2);}
+    }else{
+      ctx.fillStyle=W.floor;ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='rgba(0,0,0,.1)';ctx.fillRect(sx,sy,TILE,1);ctx.fillRect(sx,sy,1,TILE);
+      // Floor decor
+      if((x*3+y*5)%17===0){ctx.fillStyle=W.accent+'0e';ctx.fillRect(sx+4,sy+4,TILE-8,TILE-8);}
+      if((x*11+y*7)%41===0){ctx.fillStyle=W.accent+'08';ctx.font='10px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(['·','∙','•','⋅'][((x+y))%4],sx+TILE/2,sy+TILE/2);}
+    }
+  }
+}
+
+// ─── DRAW ITEMS ───────────────────────────────────────────
+const ITEM_GLOW={key:'#ffdd44',health:'#ff4466',food:'#44ff88',drink:'#4488ff',armor:'#4466ff',weapon_sword:'#ff8844',weapon_axe:'#ff5533',weapon_bow:'#44ffaa',clue_scroll:'#cc44ff',strange_gem:'#ff44ff',mirror_shard:'#ff88cc',void_crystal:'#4444ff',dream_petal:'#44ffcc',ember_coal:'#ff6600',nft_clue:'#ffcc44',nft:'#ffcc44'};
+function drawItems(){
+  currentMap.items.forEach(item=>{
+    if(item.collected)return;item.anim+=.05;
+    const sx=item.x*TILE+TILE/2-camera.x,sy=item.y*TILE+TILE/2-camera.y+Math.sin(item.anim)*3;
+    ctx.save();ctx.shadowColor=ITEM_GLOW[item.type]||'#fff';ctx.shadowBlur=12;
+    ctx.font='14px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(ITEM_EMOJI[item.type]||'▫',sx,sy);ctx.restore();
+  });
+}
+
+// ─── DRAW PORTALS ─────────────────────────────────────────
+function drawPortals(){
+  currentMap.portals.forEach(p=>{
+    p.anim+=.065;
+    const sx=p.x*TILE+TILE/2-camera.x,sy=p.y*TILE+TILE/2-camera.y;
+    const r=16+Math.sin(p.anim)*5;
+    ctx.save();ctx.shadowColor=p.color;ctx.shadowBlur=24+Math.sin(p.anim*2)*9;
+    // Inner swirl
+    const g=ctx.createRadialGradient(sx,sy,0,sx,sy,r);
+    g.addColorStop(0,p.color+'cc');g.addColorStop(.55,p.color+'44');g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();
+    // Rotating ring
+    ctx.strokeStyle=p.color;ctx.lineWidth=2;
+    ctx.beginPath();for(let i=0;i<=14;i++){const a=(i/14)*Math.PI*2+p.anim;ctx.lineTo(sx+Math.cos(a)*(r+2),sy+Math.sin(a)*(r+2));}ctx.closePath();ctx.stroke();
+    // Sparkles
+    for(let i=0;i<6;i++){const a=p.anim*1.5+i*Math.PI/3;ctx.fillStyle=p.color;ctx.fillRect(sx+Math.cos(a)*(r-4)-1,sy+Math.sin(a)*(r-4)-1,3,3);}
+    // World label
+    const dest=WORLDS[p.destWorld];
+    if(dest){ctx.fillStyle=p.color+'88';ctx.font='8px Courier New';ctx.textAlign='center';ctx.fillText(dest.name,sx,sy+r+12);}
+    ctx.restore();
+  });
+}
+
+// ─── DRAW DOORS ───────────────────────────────────────────
+function drawDoors(){
+  currentMap.doors.forEach(d=>{
+    if(d.open)return;
+    const sx=d.x*TILE-camera.x,sy=d.y*TILE-camera.y;
+    ctx.save();ctx.shadowColor=d.color;ctx.shadowBlur=16;
+    ctx.fillStyle=d.color;ctx.fillRect(sx+2,sy+2,TILE-4,TILE-4);
+    ctx.fillStyle='#00000a';ctx.fillRect(sx+8,sy+8,TILE-16,TILE-16);
+    ctx.fillStyle=d.locked?'#ffdd44':'#44ff88';ctx.fillRect(sx+TILE/2-2,sy+TILE/2-3,4,6);
+    ctx.strokeStyle=d.color+'88';ctx.lineWidth=1;ctx.strokeRect(sx+1,sy+1,TILE-2,TILE-2);
+    ctx.restore();
+  });
+}
+
+// ─── DRAW COMPUTERS ───────────────────────────────────────
+function drawComputers(){
+  currentMap.computers.forEach(c=>{
+    c.anim=(c.anim||0)+.04;
+    const sx=c.x*TILE-camera.x,sy=c.y*TILE-camera.y;
+    const col=c.hacked?'#44ff44':'#00bb44';
+    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=10;
+    ctx.fillStyle='#0a0a0a';ctx.fillRect(sx+2,sy+4,TILE-4,TILE-8);
+    ctx.fillStyle=col+'44';ctx.fillRect(sx+4,sy+6,TILE-8,TILE-12);
+    const scan=(globalTime*.4)%(TILE-12);
+    ctx.fillStyle=col+'55';ctx.fillRect(sx+4,sy+6+Math.floor(scan),TILE-8,2);
+    ctx.fillStyle='#666';ctx.fillRect(sx+TILE/2-3,sy+TILE-6,6,4);
+    ctx.restore();
+    if(!c.hacked){ctx.fillStyle=col+'99';ctx.font='8px Courier New';ctx.textAlign='center';ctx.fillText('TERMINAL',sx+TILE/2,sy-5);}
+  });
+}
+
+// ─── DRAW SAVE SHRINES ────────────────────────────────────
+function drawSaves(){
+  currentMap.saves.forEach(s=>{
+    s.anim=(s.anim||0)+.04;
+    const sx=s.x*TILE-camera.x,sy=s.y*TILE-camera.y;
+    const glow=14+Math.sin(s.anim)*6;
+    ctx.save();ctx.shadowColor='#88aaff';ctx.shadowBlur=glow;
+    ctx.fillStyle=s.used?'#223355':'#4466aa';ctx.fillRect(sx+TILE/2-5,sy+2,10,TILE-4);
+    ctx.fillStyle=s.used?'#334466':'#88aadd';ctx.fillRect(sx+TILE/2-3,sy+4,6,TILE-8);
+    ctx.restore();
+    ctx.fillStyle='#88aacc88';ctx.font='8px Courier New';ctx.textAlign='center';ctx.fillText('SHRINE',sx+TILE/2,sy-4);
+  });
+}
+
+// ─── DRAW NFT SPOTS ───────────────────────────────────────
+function drawNFTSpots(){
+  currentMap.nftSpots.forEach(n=>{
+    if(n.found)return;n.anim=(n.anim||0)+.07;
+    const sx=n.x*TILE+TILE/2-camera.x,sy=n.y*TILE+TILE/2-camera.y+Math.sin(n.anim)*4;
+    ctx.save();ctx.shadowColor='#ffcc44';ctx.shadowBlur=18+Math.sin(n.anim)*6;
+    ctx.fillStyle='#ffcc44';ctx.font='16px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('⬡',sx,sy);ctx.restore();
+    ctx.fillStyle='#ffcc4466';ctx.font='8px Courier New';ctx.textAlign='center';ctx.fillText('NFT',sx,sy+14);
+  });
+}
+
+// ─── DRAW PLAYER ──────────────────────────────────────────
+function drawPlayer(){
+  if(player.dead)return;
+  const sx=Math.round(player.px-camera.x),sy=Math.round(player.py-camera.y);
+  const hit=player.hitTimer>0&&Math.floor(player.hitTimer/5)%2===1;
+  const bc=hit?'#ff9988':(player.armor?'#4488cc':'#ddccaa');
+  const w=Math.sin(player.walkAnim)*3;
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,.32)';ctx.beginPath();ctx.ellipse(sx,sy+12,10,4,0,0,Math.PI*2);ctx.fill();
+  // Legs
+  ctx.fillStyle='#443322';ctx.fillRect(sx-4,sy+5,4,7+Math.round(w));ctx.fillRect(sx,sy+5,4,7-Math.round(w));
+  // Torso
+  ctx.fillStyle=bc;ctx.fillRect(sx-6,sy-6,12,12);
+  // Arms
+  ctx.fillStyle=bc;ctx.fillRect(sx-9,sy-5,3,8);ctx.fillRect(sx+6,sy-5,3,8);
+  // Head
+  ctx.fillStyle='#ddbbaa';ctx.fillRect(sx-5,sy-16,10,10);
+  ctx.fillStyle='#886644';ctx.fillRect(sx-5,sy-18,10,4);
+  ctx.fillStyle='#222';ctx.fillRect(sx-3,sy-14,2,2);ctx.fillRect(sx+1,sy-14,2,2);
+  // LANTERN — always carried
+  ctx.save();ctx.shadowColor='#ffcc44';ctx.shadowBlur=9;
+  ctx.fillStyle='#ffcc22';ctx.fillRect(sx+6,sy-4,5,8);
+  ctx.fillStyle='#ffee88';ctx.fillRect(sx+7,sy-3,3,6);
+  ctx.fillStyle='#cc9900';ctx.fillRect(sx+6,sy-6,5,4);
+  ctx.restore();
+  // Attack flash
+  if(player.attackTimer>0){
+    const wx=sx+Math.cos(player.facing)*22,wy=sy+Math.sin(player.facing)*22;
+    ctx.save();ctx.shadowColor='#ffcc44';ctx.shadowBlur=20;
+    ctx.fillStyle='#ffcc4466';ctx.beginPath();ctx.arc(wx,wy,18,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffcc44';ctx.fillRect(sx+Math.cos(player.facing)*14-2,sy+Math.sin(player.facing)*14-1,20,3);
+    ctx.restore();
+  }
+}
+
+// ─── DRAW NPCs ────────────────────────────────────────────
+const NPC_COL={lantern_wander:'#aabbdd',clue_seeker:'#cc99dd',merchant:'#44aa44',sage:'#ddaa44',guard:'#994444',watcher:'#556677',eye_pet:'#44ff88',eye_attack:'#ff4444',eye_hypno:'#aa44ff',mirror_self:'#ccccff',dream_creature:'#44ffcc',void_knight:'#2233aa'};
+
+// Impossible costume shapes — surrealist pixel outfits
+function drawCostume(ctx,sx,sy,variant,col,w){
+  // Each variant is an impossible/surrealist costume
+  ctx.fillStyle=col;
+  switch(variant%5){
+    case 0:// Upside-down crown hat
+      ctx.fillRect(sx-6,sy-20,12,4);ctx.fillRect(sx-8,sy-22,3,4);ctx.fillRect(sx+5,sy-22,3,4);ctx.fillRect(sx-1,sy-24,2,5);break;
+    case 1:// Cape with extra arm
+      ctx.fillRect(sx-10,sy-4,4,12);ctx.fillRect(sx+6,sy-4,4,12);ctx.fillRect(sx-10,sy-4,4,3);ctx.fillRect(sx+6,sy-4,4,3);
+      ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect(sx-10,sy-2,20,10);break;
+    case 2:// Floating mask
+      ctx.fillRect(sx-4,sy-22,8,6);ctx.fillStyle='#000a';ctx.fillRect(sx-2,sy-21,2,3);ctx.fillRect(sx+1,sy-21,2,3);break;
+    case 3:// Impossible geometry outfit
+      ctx.fillRect(sx-8,sy-8,3,3);ctx.fillRect(sx+5,sy+2,3,3);ctx.fillRect(sx-3,sy-10,3,3);ctx.fillRect(sx+2,sy+6,3,3);break;
+    case 4:// Mirror ghost silhouette
+      ctx.fillStyle=col+'44';ctx.fillRect(sx+12,sy-16,8,8);ctx.fillRect(sx+13,sy-14,6,10);ctx.fillRect(sx+11,sy-8,2,3);ctx.fillRect(sx+19,sy-8,2,3);break;
+  }
+}
+
+function drawNPCs(){
+  currentMap.npcs.forEach(npc=>{
+    if(npc.dead){if(npc.deathTimer>0){npc.deathTimer--;const sx=npc.px-camera.x,sy=npc.py-camera.y;ctx.fillStyle=`rgba(200,80,80,${npc.deathTimer/60})`;ctx.fillRect(sx-8,sy-8,16,16);}return;}
+    const sx=Math.round(npc.px-camera.x),sy=Math.round(npc.py-camera.y);
+    const col=NPC_COL[npc.type]||'#888';npc.anim+=.055;
+    if(npc.type.startsWith('eye')){drawEye(sx,sy,npc,col);}
+    else if(npc.type==='dream_creature'){drawDreamCreature(sx,sy,npc);}
+    else if(npc.type==='mirror_self'){drawMirrorSelf(sx,sy,npc);}
+    else{drawHumanoid(sx,sy,npc,col);}
+  });
+}
+
+function drawHumanoid(sx,sy,npc,col){
+  const w=Math.sin(npc.anim)*2;
+  ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(sx,sy+12,9,4,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#332211';ctx.fillRect(sx-4,sy+5,4,6+Math.round(w));ctx.fillRect(sx,sy+5,4,6-Math.round(w));
+  ctx.fillStyle=col;ctx.fillRect(sx-5,sy-5,10,11);
+  ctx.fillStyle=col;ctx.fillRect(sx-8,sy-4,3,7);ctx.fillRect(sx+5,sy-4,3,7);
+  ctx.fillStyle='#ddbbaa';ctx.fillRect(sx-4,sy-15,8,9);
+  ctx.fillStyle='#775533';ctx.fillRect(sx-4,sy-17,8,4);
+  ctx.fillStyle='#222';ctx.fillRect(sx-3,sy-13,2,2);ctx.fillRect(sx+1,sy-13,2,2);
+  // Impossible costume
+  drawCostume(ctx,sx,sy,npc.costume,col,w);
+  // Lantern for wanderers/clue seekers
+  if(npc.type==='lantern_wander'||npc.type==='clue_seeker'){
+    npc.lanternAnim+=.07;const lf=.8+Math.sin(npc.lanternAnim*3)*0.2;
+    ctx.save();ctx.shadowColor=npc.lanternColor;ctx.shadowBlur=(10+Math.sin(npc.lanternAnim)*4)*lf;
+    ctx.fillStyle=npc.lanternColor;ctx.fillRect(sx+6,sy-4,5,8);
+    ctx.fillStyle='#fffccc';ctx.fillRect(sx+7,sy-3,3,6);
+    ctx.fillStyle=npc.lanternColor;ctx.fillRect(sx+6,sy-6,5,3);
+    ctx.restore();
+    const lg=ctx.createRadialGradient(sx+8,sy,0,sx+8,sy,42*lf);
+    lg.addColorStop(0,npc.lanternColor+'1a');lg.addColorStop(1,'transparent');
+    ctx.fillStyle=lg;ctx.fillRect(sx-34,sy-42,80,80);
+  }
+  // HP bar for hostiles
+  if(npc.aggro||npc.type==='guard'||npc.type==='void_knight'){
+    const bw=22,p=npc.hp/npc.maxHp;ctx.fillStyle='#440000';ctx.fillRect(sx-bw/2,sy-22,bw,4);ctx.fillStyle='#ff2244';ctx.fillRect(sx-bw/2,sy-22,bw*p,4);
+  }
+  // Goal label for wanderers
+  if(npc.goal&&npc.type==='lantern_wander'){ctx.fillStyle=npc.lanternColor+'88';ctx.font='8px Courier New';ctx.textAlign='center';ctx.fillText('→'+npc.goal.replace('_',''),sx,sy-24);}
+  // Talk bubble
+  if(['merchant','sage','lantern_wander','clue_seeker','mirror_self','dream_creature'].includes(npc.type)&&Math.floor(globalTime/80)%3===0){ctx.fillStyle='#ffffff55';ctx.font='9px serif';ctx.textAlign='center';ctx.fillText('💬',sx,sy-26);}
+}
+
+function drawEye(sx,sy,npc,col){
+  const ey=sy+Math.sin(npc.anim)*6;
+  ctx.save();ctx.shadowColor=col;ctx.shadowBlur=18+Math.sin(npc.anim)*6;
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(sx,ey,12,9,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(sx+Math.cos(npc.anim*.4)*3,ey+Math.sin(npc.anim*.25)*2,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#000';ctx.beginPath();ctx.arc(sx+Math.cos(npc.anim*.4)*3,ey+Math.sin(npc.anim*.25)*2,2,0,Math.PI*2);ctx.fill();
+  // Eyelid blink
+  if(Math.floor(npc.anim*10)%40<3){ctx.fillStyle='#222';ctx.fillRect(sx-12,ey-2,24,6);}
+  if(npc.type==='eye_hypno'){
+    [14,21,29].forEach((r,i)=>{ctx.strokeStyle=col+(i===0?'88':i===1?'44':'22');ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(sx,ey,r+Math.sin(npc.anim+i)*3,0,Math.PI*2);ctx.stroke();});
+  }
+  ctx.restore();
+}
+
+function drawDreamCreature(sx,sy,npc){
+  // Impossible floating form — petals and geometry
+  ctx.save();ctx.shadowColor='#44ffcc';ctx.shadowBlur=16;
+  ctx.fillStyle='#44ffcc44';ctx.beginPath();ctx.arc(sx,sy+Math.sin(npc.anim)*8,16,0,Math.PI*2);ctx.fill();
+  for(let i=0;i<6;i++){const a=npc.anim+i*Math.PI/3,r=14+Math.sin(npc.anim*2+i)*4;ctx.fillStyle='#44ffcc66';ctx.fillRect(sx+Math.cos(a)*r-3,sy+Math.sin(npc.anim)*8+Math.sin(a)*r-3,6,6);}
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(sx,sy+Math.sin(npc.anim)*8,5,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function drawMirrorSelf(sx,sy,npc){
+  // Looks like the player but inverted/glitched
+  ctx.save();ctx.shadowColor='#ff88cc';ctx.shadowBlur=14;ctx.globalAlpha=.75;
+  // Mirrored body — reversed horizontally
+  ctx.scale(-1,1);const msx=-sx;
+  ctx.fillStyle='#aabbcc';ctx.fillRect(msx-6,sy-6,12,12);
+  ctx.fillStyle='#ddbbaa';ctx.fillRect(msx-5,sy-16,10,10);
+  ctx.fillStyle='#886644';ctx.fillRect(msx-5,sy-18,10,4);
+  ctx.fillStyle='#222';ctx.fillRect(msx-3,sy-14,2,2);ctx.fillRect(msx+1,sy-14,2,2);
+  // Mirror lantern
+  ctx.shadowColor='#ff88cc';ctx.fillStyle='#ff88cc';ctx.fillRect(msx-11,sy-4,5,8);ctx.fillStyle='#ffccee';ctx.fillRect(msx-10,sy-3,3,6);
+  ctx.restore();
+}
+
+// ─── DRAW BOSS ────────────────────────────────────────────
+function drawBoss(){
+  const b=currentMap.boss;if(b.dead){if(b.deathTimer>0){b.deathTimer--;spawnParts(b.px-camera.x,b.py-camera.y,'#ff2200',3);}return;}
+  const sx=Math.round(b.px-camera.x),sy=Math.round(b.py-camera.y);
+  const pulse=1+Math.sin(b.anim)*.07;
+  ctx.save();ctx.shadowColor='#ff2200';ctx.shadowBlur=30+Math.sin(b.anim)*12;
+  // Massive pixelated form
+  const s=Math.round(2.4*pulse);
+  ctx.fillStyle='#180006';ctx.fillRect(sx-8*s,sy-12*s,16*s,22*s);
+  ctx.fillStyle='#380012';ctx.fillRect(sx-5*s,sy-14*s,10*s,8*s);
+  ctx.fillStyle='#ff0000';ctx.fillRect(sx-3*s,sy-12*s,3*s,3*s);ctx.fillRect(sx+s,sy-12*s,3*s,3*s);
+  // Impossible costume on boss — floating extra limbs
+  ctx.fillStyle='#ff220044';
+  for(let i=0;i<4;i++){const a=b.anim+i*Math.PI/2;ctx.fillRect(sx+Math.cos(a)*30*s/2-3,sy+Math.sin(a)*24*s/2-3,6,6);}
+  if(b.hp<b.maxHp*.5){ctx.strokeStyle='#ff4400';ctx.lineWidth=2;for(let i=0;i<6;i++){const a=b.anim+i*Math.PI/3;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+Math.cos(a)*32,sy+Math.sin(a)*32);ctx.stroke();}}
+  if(b.hp<b.maxHp*.25){// Phase 3: full surreal transform
+    ctx.strokeStyle='#ff00ff44';ctx.lineWidth=3;ctx.beginPath();ctx.arc(sx,sy,40+Math.sin(b.anim*3)*10,0,Math.PI*2);ctx.stroke();}
+  ctx.restore();
+  if(!b.aggro){ctx.fillStyle='#ff220088';ctx.font='10px Courier New';ctx.textAlign='center';ctx.fillText('⚡ BOSS',sx,sy-38);}
+}
+
+// ─── LANTERN LIGHT ────────────────────────────────────────
+function drawLanternLight(){
+  const sx=player.px-camera.x,sy=player.py-camera.y;
+  const r=135+20*Math.sin(globalTime*.04);
+  const g=ctx.createRadialGradient(sx,sy,0,sx,sy,r);
+  g.addColorStop(0,'rgba(255,210,80,.16)');g.addColorStop(.45,'rgba(240,160,40,.07)');g.addColorStop(.82,'rgba(70,20,130,.04)');g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+// ─── DARKNESS OVERLAY ─────────────────────────────────────
+function drawDarkness(){
+  const sx=player.px-camera.x,sy=player.py-camera.y;
+  const lightR=138+20*Math.sin(globalTime*.04);
+  const off=document.createElement('canvas');off.width=canvas.width;off.height=canvas.height;
+  const oc=off.getContext('2d');
+  const W=WORLDS[currentWorldId];
+  oc.fillStyle=W.fog;oc.fillRect(0,0,canvas.width,canvas.height);
+  oc.globalCompositeOperation='destination-out';
+  // Player light hole
+  const pg=oc.createRadialGradient(sx,sy,0,sx,sy,lightR);
+  pg.addColorStop(0,'rgba(0,0,0,1)');pg.addColorStop(.5,'rgba(0,0,0,1)');pg.addColorStop(.84,'rgba(0,0,0,.3)');pg.addColorStop(1,'rgba(0,0,0,0)');
+  oc.fillStyle=pg;oc.fillRect(0,0,canvas.width,canvas.height);
+  // NPC lantern holes
+  currentMap.npcs.forEach(npc=>{
+    if(npc.dead)return;if(npc.type!=='lantern_wander'&&npc.type!=='clue_seeker')return;
+    const nx=npc.px-camera.x,ny=npc.py-camera.y;
+    const ng=oc.createRadialGradient(nx+8,ny,0,nx+8,ny,50);
+    ng.addColorStop(0,'rgba(0,0,0,1)');ng.addColorStop(.6,'rgba(0,0,0,.7)');ng.addColorStop(1,'rgba(0,0,0,0)');
+    oc.fillStyle=ng;oc.fillRect(0,0,canvas.width,canvas.height);
+  });
+  ctx.save();ctx.globalAlpha=.93;ctx.drawImage(off,0,0);ctx.restore();
+}
+
+// ─── PARTICLES + GHOSTS ───────────────────────────────────
+function drawParticles(){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.1;p.life-=.027;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    ctx.fillStyle=p.color+(Math.floor(p.life*255).toString(16).padStart(2,'0'));
+    ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);
+  }
+}
+function drawGhosts(){
+  for(let i=ghosts.length-1;i>=0;i--){
+    const g=ghosts[i];g.y+=g.vy;g.alpha-=.011;
+    if(g.alpha<=0){ghosts.splice(i,1);continue;}
+    const sx=g.x-camera.x,sy=g.y-camera.y;
+    ctx.save();ctx.globalAlpha=g.alpha;ctx.fillStyle='#eeeeff';
+    ctx.beginPath();ctx.arc(sx,sy-5,g.size/2,Math.PI,0);
+    ctx.lineTo(sx+g.size/2,sy+6);
+    for(let j=0;j<3;j++){const wx=sx+g.size/2-j*(g.size/3);ctx.quadraticCurveTo(wx-g.size/6,sy+11,wx-g.size/3,sy+6);}
+    ctx.lineTo(sx-g.size/2,sy+6);ctx.closePath();ctx.fill();ctx.restore();
+  }
+}
+function drawFloatingTexts(){
+  for(let i=floatingTexts.length-1;i>=0;i--){
+    const t=floatingTexts[i];t.y+=t.vy;t.life-=.02;
+    if(t.life<=0){floatingTexts.splice(i,1);continue;}
+    ctx.globalAlpha=t.life;ctx.fillStyle=t.color;ctx.font='11px Courier New';ctx.textAlign='center';ctx.fillText(t.text,t.x-camera.x,t.y-camera.y);ctx.globalAlpha=1;
+  }
+}
+
+// ─── MINIMAP ──────────────────────────────────────────────
+let mmTimer=0;
+function drawMinimap(){
+  if(mmTimer++%8!==0)return;
+  const mc=document.getElementById('mmCanvas').getContext('2d');
+  mc.imageSmoothingEnabled=false;
+  const W=WORLDS[currentWorldId];
+  mc.fillStyle='#000';mc.fillRect(0,0,76,76);
+  const sc=76/MAP_W;
+  for(let y=0;y<MAP_H;y++)for(let x=0;x<MAP_W;x++)if(currentMap.data[y][x]===0){mc.fillStyle=W.floor;mc.fillRect(x*sc,y*sc,sc,sc);}
+  currentMap.portals.forEach(p=>{mc.fillStyle=p.color;mc.fillRect(p.x*sc-1,p.y*sc-1,3,3);});
+  currentMap.npcs.filter(n=>!n.dead&&(n.type==='lantern_wander'||n.type==='clue_seeker')).forEach(n=>{mc.fillStyle=n.lanternColor;mc.fillRect(Math.floor(n.px/TILE)*sc,Math.floor(n.py/TILE)*sc,2,2);});
+  mc.fillStyle='#ffdd44';mc.fillRect(player.x*sc-1,player.y*sc-1,3,3);
+}
+
+// ─── PSYCHO EFFECTS ───────────────────────────────────────
+function maybePsycho(){
+  const W=WORLDS[currentWorldId];
+  if(Math.random()<.0018){ctx.fillStyle=W.accent+'08';ctx.fillRect(0,0,canvas.width,canvas.height);}
+  if(Math.random()<.0003){
+    ctx.save();ctx.globalAlpha=.048;ctx.fillStyle='#ffffff';ctx.font='bold 90px serif';ctx.textAlign='center';
+    ctx.fillText(['△','○','✦','⬡','⊕','∞','◈','Ω'][Math.floor(Math.random()*8)],canvas.width/2,canvas.height/2);ctx.restore();
+  }
+  // Rare subliminal clue flash
+  if(Math.random()<.0001){ctx.save();ctx.globalAlpha=.04;ctx.fillStyle='#ffffff';ctx.font='12px Courier New';ctx.textAlign='center';ctx.fillText(CLUES[Math.floor(Math.random()*CLUES.length)],canvas.width/2,canvas.height/2+60);ctx.restore();}
+}
+
+// ─── TITLE SCREEN ANIMATION ───────────────────────────────
+const titleCanvas=document.getElementById('titleCanvas');
+const tctx=titleCanvas.getContext('2d');
+let titleParticles=[];
+function animateTitle(){
+  if(gameState!=='title')return;
+  titleCanvas.width=window.innerWidth;titleCanvas.height=window.innerHeight;
+  tctx.fillStyle='rgba(0,0,0,.12)';tctx.fillRect(0,0,titleCanvas.width,titleCanvas.height);
+  if(Math.random()<.12){const a=Math.random()*Math.PI*2,r=50+Math.random()*Math.min(titleCanvas.width,titleCanvas.height)*.4;titleParticles.push({x:titleCanvas.width/2+Math.cos(a)*r,y:titleCanvas.height/2+Math.sin(a)*r,vx:(Math.random()-.5)*.4,vy:-Math.random()*.7-.3,life:1,color:`hsl(${30+Math.random()*40},90%,60%)`,size:1+Math.random()*3});}
+  for(let i=titleParticles.length-1;i>=0;i--){const p=titleParticles[i];p.x+=p.vx;p.y+=p.vy;p.life-=.006;if(p.life<=0){titleParticles.splice(i,1);continue;}tctx.fillStyle=p.color+(Math.floor(p.life*200).toString(16).padStart(2,'0'));tctx.fillRect(p.x,p.y,p.size,p.size);}
+  requestAnimationFrame(animateTitle);
+}
+animateTitle();
+
+// ─── TIMERS ───────────────────────────────────────────────
+function updateTimers(){if(player.attackTimer>0)player.attackTimer--;if(player.hitTimer>0)player.hitTimer--;}
+
+// ─── START GAME ───────────────────────────────────────────
+function startGame(){
+  document.getElementById('titleScreen').style.display='none';
+  gameState='playing';
+  loadGame();
+  if(!currentMap)initWorld('veil',false);
+  renderHearts();renderInventory();
+  setTimeout(()=>startMusic(currentWorldId),500);
+  requestAnimationFrame(loop);
+}
+
+// ─── MAIN LOOP ────────────────────────────────────────────
+function loop(){
+  if(gameState!=='playing'){requestAnimationFrame(loop);return;}
+  globalTime++;
+  const W=WORLDS[currentWorldId];
+  ctx.fillStyle=W.bg;ctx.fillRect(0,0,canvas.width,canvas.height);
+  updateCamera();updateTimers();
+  if(!transitioning){movePlayer();updateNPCs();updateBoss();checkPickup();checkPortals();checkSaves();}
+  drawMap();drawDoors();drawComputers();drawSaves();drawNFTSpots();drawItems();drawPortals();drawNPCs();drawBoss();drawPlayer();
+  drawLanternLight();drawParticles();drawGhosts();drawFloatingTexts();drawDarkness();maybePsycho();drawMinimap();
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
