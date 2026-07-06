@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --background: 240 20% 4%;
+    --foreground: 210 40% 92%;
+    --card: 240 18% 8%;
+    --card-foreground: 210 40% 92%;
+    --popover: 240 18% 8%;
+    --popover-foreground: 210 40% 92%;
+    --primary: 174 72% 56%;
+    --primary-foreground: 240 20% 4%;
+    --secondary: 270 50% 40%;
+    --secondary-foreground: 210 40% 92%;
+    --muted: 240 15% 14%;
+    --muted-foreground: 210 20% 55%;
+    --accent: 45 90% 55%;
+    --accent-foreground: 240 20% 4%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 240 15% 18%;
+    --input: 240 15% 18%;
+    --ring: 174 72% 56%;
+    --chart-1: 174 72% 56%;
+    --chart-2: 270 50% 55%;
+    --chart-3: 45 90% 55%;
+    --chart-4: 320 60% 50%;
+    --chart-5: 200 70% 50%;
+    --radius: 0.75rem;
+    --font-heading: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sidebar-background: 240 18% 6%;
+    --sidebar-foreground: 210 40% 92%;
+    --sidebar-primary: 174 72% 56%;
+    --sidebar-primary-foreground: 240 20% 4%;
+    --sidebar-accent: 240 15% 14%;
+    --sidebar-accent-foreground: 210 40% 92%;
+    --sidebar-border: 240 15% 18%;
+    --sidebar-ring: 174 72% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+}
+
+/* Cosmic background animation */
+@keyframes cosmicFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+  50% { transform: translateY(-20px) rotate(180deg); opacity: 0.6; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(56, 210, 189, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(56, 210, 189, 0.4), 0 0 60px rgba(139, 92, 246, 0.2); }
+}
+
+@keyframes lanternGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 200, 50, 0.6)); }
+  50% { filter: drop-shadow(0 0 20px rgba(255, 200, 50, 0.9)); }
+}
+
+@keyframes eyeFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  33% { transform: translateY(-8px) scale(1.05); }
+  66% { transform: translateY(4px) scale(0.97); }
+}
+
+@keyframes shiftGeometry {
+  0% { border-radius: 12px; }
+  25% { border-radius: 20px 8px 20px 8px; }
+  50% { border-radius: 8px 20px 8px 20px; }
+  75% { border-radius: 16px 4px 16px 4px; }
+  100% { border-radius: 12px; }
+}
+
+.cosmic-float { animation: cosmicFloat 6s ease-in-out infinite; }
+.pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+.lantern-glow { animation: lanternGlow 2s ease-in-out infinite; }
+.eye-float { animation: eyeFloat 4s ease-in-out infinite; }
+.shift-geometry { animation: shiftGeometry 12s ease-in-out infinite; }
+
+.cosmic-bg {
+  background: radial-gradient(ellipse at 20% 50%, rgba(56, 210, 189, 0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(255, 200, 50, 0.05) 0%, transparent 50%),
+              hsl(240, 20%, 4%);
+}
+
+.tile-card {
+  background: linear-gradient(135deg, hsl(240, 18%, 9%) 0%, hsl(240, 18%, 6%) 100%);
+  border: 1px solid hsl(240, 15%, 16%);
+  transition: all 0.3s ease;
+}
+.tile-card:hover {
+  border-color: hsl(174, 72%, 40%);
+  box-shadow: 0 0 20px rgba(56, 210, 189, 0.15), 0 8px 32px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.glass-panel {
+  background: rgba(15, 15, 30, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(56, 210, 189, 0.15);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: hsl(240, 18%, 6%); }
+::-webkit-scrollbar-thumb { background: hsl(240, 15%, 22%); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(174, 72%, 40%); }
