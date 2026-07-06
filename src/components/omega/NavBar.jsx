@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Eye, Wallet, Image, Compass, Bot, Brain, Shield, FileCode, BarChart3, Gamepad2, Github } from 'lucide-react';
+import { Menu, X, Eye, Wallet, Image, Compass, Bot, Brain, Shield, FileCode, BarChart3, Gamepad2, Github, Sparkles } from 'lucide-react';
 import OracleEye from '@/components/omega/OracleEye';
 
 const NAV_ITEMS = [
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { path: '/brain', label: 'Brain', icon: Brain },
   { path: '/code-export', label: 'Code Export', icon: FileCode },
   { path: '/github', label: 'GitHub', icon: Github },
+  { path: '/omega-deep', label: 'Omega Deep', icon: Sparkles },
 ];
 
 export default function NavBar({ oracleScore = 50 }) {
